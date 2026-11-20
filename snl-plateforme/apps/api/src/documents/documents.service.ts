@@ -19,7 +19,7 @@ import { Antivirus } from './antivirus';
 import { Stockage } from './stockage';
 import { reconnaitreType } from './types-fichiers';
 
-export const TYPES_ENTITES = ['organisation', 'immeuble', 'logement', 'menage', 'personne'] as const;
+export const TYPES_ENTITES = ['organisation', 'immeuble', 'logement', 'menage', 'personne', 'intervention'] as const;
 export type TypeEntite = (typeof TYPES_ENTITES)[number];
 
 /** Permission de lecture qui donne accès aux documents d'une entité. */
@@ -29,6 +29,16 @@ const LECTURE_ENTITE: Record<TypeEntite, Permission> = {
   logement: 'logement:lire',
   menage: 'menage:lire',
   personne: 'personne:lire',
+  intervention: 'travaux:lire',
+};
+
+/**
+ * Permission d'écriture propre à certaines entités : les photos d'un
+ * signalement peuvent être déposées par toute personne qui peut signaler,
+ * bénévoles compris.
+ */
+const ECRITURE_ENTITE: Partial<Record<TypeEntite, Permission>> = {
+  intervention: 'travaux:signaler',
 };
 
 export interface FichierRecu {
@@ -190,8 +200,10 @@ export class DocumentsService {
     const organisationId = await organisationDeLEntite(tx, entite.entiteType, entite.entiteId);
     if (!organisationId) throw new NotFoundException('Élément introuvable.');
     const lecture = LECTURE_ENTITE[entite.entiteType];
+    const effective =
+      permission === 'document:lire' ? lecture : (ECRITURE_ENTITE[entite.entiteType] ?? permission);
     await exigerSurOrganisation(tx, this.autorisation, principal, lecture, organisationId, lecture, 'Élément');
-    await exigerSurOrganisation(tx, this.autorisation, principal, permission, organisationId, lecture, 'Élément');
+    await exigerSurOrganisation(tx, this.autorisation, principal, effective, organisationId, lecture, 'Élément');
     return organisationId;
   }
 }
@@ -209,5 +221,7 @@ async function organisationDeLEntite(tx: Tx, type: TypeEntite, id: string): Prom
       return (await tx.menage.findFirst({ where: { id, supprimeLe: null }, ...choisir }))?.organisationId ?? null;
     case 'personne':
       return (await tx.personne.findFirst({ where: { id, supprimeLe: null }, ...choisir }))?.organisationId ?? null;
+    case 'intervention':
+      return (await tx.intervention.findUnique({ where: { id }, ...choisir }))?.organisationId ?? null;
   }
 }

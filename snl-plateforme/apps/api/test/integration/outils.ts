@@ -9,6 +9,7 @@ import { VerificateurJeton, type JetonVerifie } from '../../src/auth/verificateu
 import { chargerConfiguration } from '../../src/config/configuration';
 import { Antivirus } from '../../src/documents/antivirus';
 import { Stockage } from '../../src/documents/stockage';
+import { Notificateur, type Message } from '../../src/notifications/notificateur';
 
 export const URL_PROPRIETAIRE = process.env.DATABASE_URL_PROPRIETAIRE;
 export const URL_APPLICATION = process.env.DATABASE_URL;
@@ -22,7 +23,8 @@ export function clientProprietaire(): PrismaClient {
 
 export async function viderBase(prisma: PrismaClient): Promise<void> {
   await prisma.$executeRawUnsafe(`
-    TRUNCATE evenement_audit, document, donnees_sensibles, personne, menage, logement,
+    TRUNCATE evenement_intervention, ligne_cout, intervention, entretien_periodique, artisan,
+             evenement_audit, document, donnees_sensibles, personne, menage, logement,
              immeuble, activation_module, adhesion, utilisateur, organisation RESTART IDENTITY CASCADE`);
 }
 
@@ -97,6 +99,13 @@ export class FauxFournisseur extends FournisseurIdentite {
   }
 }
 
+export class FauxNotificateur extends Notificateur {
+  readonly messages: Message[] = [];
+  async envoyer(message: Message): Promise<void> {
+    this.messages.push(message);
+  }
+}
+
 export class FauxStockage extends Stockage {
   readonly objets = new Map<string, Buffer>();
   async deposer(cle: string, contenu: Buffer): Promise<void> {
@@ -119,6 +128,7 @@ export interface ApplicationDeTest {
   app: INestApplication;
   fournisseur: FauxFournisseur;
   stockage: FauxStockage;
+  notificateur: FauxNotificateur;
 }
 
 export async function demarrerApplication(): Promise<ApplicationDeTest> {
@@ -135,14 +145,16 @@ export async function demarrerApplication(): Promise<ApplicationDeTest> {
   });
   const fournisseur = new FauxFournisseur();
   const stockage = new FauxStockage();
+  const notificateur = new FauxNotificateur();
   const module = await Test.createTestingModule({ imports: [AppModule.avec(config)] })
     .overrideProvider(VerificateurJeton).useValue(new FauxVerificateur())
     .overrideProvider(FournisseurIdentite).useValue(fournisseur)
     .overrideProvider(Stockage).useValue(stockage)
     .overrideProvider(Antivirus).useValue(new FauxAntivirus())
+    .overrideProvider(Notificateur).useValue(notificateur)
     .compile();
   const app = module.createNestApplication({ bodyParser: false, logger: false });
   configurerApplication(app, config);
   await app.init();
-  return { app, fournisseur, stockage };
+  return { app, fournisseur, stockage, notificateur };
 }

@@ -87,6 +87,21 @@ export class ModulesService {
     }
   }
 
+  /**
+   * Parmi `organisationIds`, celles où le module est activé (réglage propre
+   * ou hérité). Sert à filtrer les listes des modules métier.
+   */
+  async organisationsAvecModule(tx: Tx, organisationIds: string[], code: CodeModule): Promise<string[]> {
+    if (organisationIds.length === 0) return [];
+    const [organisations, reglages] = await Promise.all([
+      tx.organisation.findMany({ where: { id: { in: organisationIds } }, select: { id: true, chemin: true } }),
+      tx.activationModule.findMany({ where: { codeModule: code } }),
+    ]);
+    return organisations
+      .filter((o) => resoudreModules(ligneeDepuisChemin(o.chemin), reglages).find((e) => e.code === code)?.active)
+      .map((o) => o.id);
+  }
+
   private async etats(tx: Tx, organisationId: string): Promise<EtatModule[]> {
     const organisation = await chargerOrganisation(tx, organisationId);
     const lignee = ligneeDepuisChemin(organisation.chemin);

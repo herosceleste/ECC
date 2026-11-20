@@ -34,6 +34,11 @@ export const PERMISSIONS = [
   'document:ecrire',
   'audit:lire',
   'rgpd:traiter',
+  // Module M1 Travaux et entretien
+  'travaux:lire',
+  'travaux:signaler',
+  'travaux:gerer',
+  'artisan:gerer',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -57,6 +62,8 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
     'menage:lire',
     'personne:lire',
     'document:lire',
+    'travaux:lire',
+    'travaux:signaler',
   ],
   COORDINATEUR: [
     'organisation:lire',
@@ -67,6 +74,10 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
     'personne:lire',
     'document:lire',
     'document:ecrire',
+    'travaux:lire',
+    'travaux:signaler',
+    'travaux:gerer',
+    'artisan:gerer',
   ],
   TRAVAILLEUR_SOCIAL: [
     'organisation:lire',
@@ -79,6 +90,8 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
     'personne:lire_sensible',
     'document:lire',
     'document:ecrire',
+    'travaux:lire',
+    'travaux:signaler',
   ],
   GESTIONNAIRE: [
     'organisation:lire',
@@ -91,6 +104,10 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
     'personne:ecrire',
     'document:lire',
     'document:ecrire',
+    'travaux:lire',
+    'travaux:signaler',
+    'travaux:gerer',
+    'artisan:gerer',
   ],
   ADMINISTRATEUR: [
     'organisation:lire',
@@ -104,6 +121,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
     'document:lire',
     'audit:lire',
     'rgpd:traiter',
+    'travaux:lire',
   ],
 };
 

@@ -130,9 +130,14 @@ test('un administrateur active un module, invite un bénévole et consulte le jo
 
   await page.goto('/organisations');
   await page.getByRole('link', { name: 'Groupe de Massy' }).click();
+  // M1 est activé sur l'antenne : le groupe en hérite, puis peut s'en retirer et y revenir.
   const ligneM1 = page.getByRole('row').filter({ hasText: 'M1 Travaux et entretien' });
-  await ligneM1.getByRole('button', { name: 'Activer' }).click();
+  await expect(ligneM1.getByText('(hérité)')).toBeVisible();
+  await ligneM1.getByRole('button', { name: 'Désactiver', exact: true }).click();
+  await expect(ligneM1.getByText('Désactivé', { exact: true })).toBeVisible();
+  await ligneM1.getByRole('button', { name: 'Activer', exact: true }).click();
   await expect(ligneM1.getByText('Activé', { exact: true })).toBeVisible();
+  await expect(ligneM1.getByText('(hérité)')).toHaveCount(0);
 
   await page.goto('/utilisateurs');
   await page.getByLabel('Prénom et nom').fill('Noé Nouveau');

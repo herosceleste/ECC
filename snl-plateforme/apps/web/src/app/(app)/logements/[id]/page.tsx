@@ -6,7 +6,9 @@ import { BoutonEnvoi, Formulaire } from '@/composants/formulaire';
 import { appelerApi, ErreurApi } from '@/lib/api';
 import { chargerMoi, cheminsOrganisations, nomsOrganisations } from '@/lib/contexte';
 import { LIBELLES_STATUTS_LOGEMENT, peut } from '@/lib/droits';
-import type { Immeuble, Logement } from '@/lib/types';
+import { euros, CATEGORIES, STATUTS } from '@/lib/travaux';
+import type { HistoriqueLogement, Immeuble, Logement } from '@/lib/types';
+import { dateCourte } from '@/lib/format';
 import { modifierLogement } from '../actions';
 import { ChampsLogement } from '../champs';
 
@@ -32,6 +34,13 @@ export default async function FicheLogement({
   const modifier = peut(moi.adhesions, 'logement:ecrire', chemin);
   const deposer = peut(moi.adhesions, 'document:ecrire', chemin);
   const immeubles = modifier ? await appelerApi<Immeuble[]>('/immeubles') : [];
+  // Historique des travaux (M1-F04), si le module est activé pour ce logement.
+  const historique = peut(moi.adhesions, 'travaux:lire', chemin)
+    ? await appelerApi<HistoriqueLogement>(`/travaux/logements/${logement.id}/historique`).catch((erreur: unknown) => {
+        if (erreur instanceof ErreurApi && erreur.statut === 403) return null;
+        throw erreur;
+      })
+    : null;
 
   return (
     <>
@@ -87,6 +96,49 @@ export default async function FicheLogement({
         </div>
 
         <div>
+          {historique ? (
+            <section className="carte" aria-labelledby="titre-travaux">
+              <h2 id="titre-travaux">Travaux et entretien</h2>
+              {peut(moi.adhesions, 'travaux:signaler', chemin) ? (
+                <p>
+                  <Link className="bouton bouton-secondaire" href={`/travaux/signaler?logement=${logement.id}`}>
+                    Signaler un problème
+                  </Link>
+                </p>
+              ) : null}
+              {historique.interventions.length === 0 ? (
+                <p className="aide">Aucune intervention enregistrée.</p>
+              ) : (
+                <ul>
+                  {historique.interventions.map((i) => (
+                    <li key={i.id}>
+                      <Link href={`/travaux/${i.id}`}>{CATEGORIES[i.categorie] ?? i.categorie}</Link>
+                      <span className="aide">
+                        {' '}
+                        · {dateCourte(i.creeLe)} · {STATUTS[i.statut]?.libelle.toLowerCase()}
+                        {i.totaux && i.totaux.facturesCentimes > 0 ? ` · ${euros(i.totaux.facturesCentimes)}` : ''}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <p>
+                Coût total facturé : <strong>{euros(historique.coutTotalCentimes)}</strong>
+              </p>
+              {historique.entretiens.length > 0 ? (
+                <>
+                  <h3>Entretiens programmés</h3>
+                  <ul>
+                    {historique.entretiens.map((e) => (
+                      <li key={e.id}>
+                        {e.libelle} <span className="aide">· prochaine échéance {dateCourte(e.prochaineEcheance)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : null}
+            </section>
+          ) : null}
           <SectionDocuments
             entiteType="logement"
             entiteId={logement.id}

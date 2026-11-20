@@ -16,7 +16,7 @@ Le socle couvre les exigences suivantes du cahier des charges.
 | M0-F04 | Référentiel immeubles, logements, ménages, personnes | Fait |
 | M0-F05 | Dépôt, versionnement et téléchargement de documents, avec antivirus | Fait |
 | M0-F06 | Consultation filtrée du journal d'audit | Fait |
-| M0-F07 | Notifications courriel, SMS et application | À faire |
+| M0-F07 | Notifications courriel, SMS et application | En partie (courriel) |
 | M0-F08 | Activation des modules par organisation, avec héritage | Fait |
 | M0-F09 | Recherche dans le périmètre autorisé | Fait (logements, personnes) |
 | M0-F10 | Export des données d'une personne | Fait (rectification et effacement : routes existantes) |
@@ -41,12 +41,38 @@ Quelques choix structurants :
 - **Données sensibles à la demande** : la situation sociale d'une personne ne s'affiche qu'après un clic explicite, car chaque consultation est journalisée.
 - **Pas de DSFR** : le système de design de l'État est réservé aux sites publics. L'interface utilise sa propre charte, sans dépendance.
 
+## Module M1 Travaux et entretien
+
+Le premier module métier permet de signaler un problème dans un logement, de le qualifier, de le confier à un bénévole, un salarié ou un artisan, puis d'en suivre la résolution, le coût et l'historique. Il s'active par organisation, comme tous les modules.
+
+| Exigence | Contenu | État |
+| --- | --- | --- |
+| M1-F01 | Signalement avec catégorie, description, urgence ressentie et photos | Fait |
+| M1-F02 | Qualification (priorité, nature) et affectation | Fait |
+| M1-F03 | Suivi du statut, personne qui a signalé informée à chaque étape | Fait (courriel) |
+| M1-F04 | Historique des interventions par logement | Fait ; par immeuble : à faire |
+| M1-F05 | Carnet d'artisans, partagé de l'antenne vers ses groupes | Fait |
+| M1-F06 | Devis, factures et coût de chaque intervention | Fait |
+| M1-F07 | Entretiens périodiques, échéances et relance | Fait (relance par courriel : à faire) |
+| M1-F08 | Chantiers collectifs de bénévoles | À faire, avec M2 |
+| M1-F09 | Avis du locataire après résolution | À faire, avec M14 |
+| M1-R01 | Signalement urgent : alerte immédiate et numéros d'urgence affichés | Fait |
+| M1-R02 | Clôture réservée aux coordinateurs et gestionnaires, réouverture sous 15 jours | Fait |
+| M1-R03 | Gaz et électricité jamais confiés à un bénévole | Fait |
+
+Quelques précisions de fonctionnement :
+
+- Une odeur de gaz est toujours traitée comme une urgence, même si la case n'est pas cochée. L'alerte part aussitôt vers les coordinateurs et gestionnaires du logement et de ses organisations parentes, sans attendre la qualification. Le courriel ne contient aucune donnée personnelle, seulement un lien.
+- Le fil de suivi d'une intervention ne peut être ni modifié ni effacé, comme le journal d'audit.
+- Un signalement peut rester enregistré même si une photo est refusée (format, antivirus) : la page l'indique et propose de la déposer de nouveau.
+- Les numéros d'urgence affichés (0 800 47 33 33 pour le gaz, 18, 112) sont à faire valider par SNL, avec les éventuels numéros d'astreinte propres à chaque antenne.
+
 ## Organisation du code
 
 ```text
 snl-plateforme/
 ├── apps/web/                 interface Next.js (pages, actions serveur, session)
-├── apps/api/                 API NestJS du socle
+├── apps/api/                 API NestJS : socle et modules métier (src/travaux pour M1)
 │   ├── prisma/               schéma et migrations (dont la sécurité RLS)
 │   ├── src/
 │   │   ├── auth/             jeton OIDC, garde, invitation Keycloak
@@ -140,6 +166,8 @@ Ils parcourent les rôles de bénévole, coordinateur, travailleur social et adm
 
 ## Points ouverts
 
+- Les locataires ne peuvent pas encore signaler eux-mêmes un problème : le lien entre un locataire et son logement relève du bail (module M6). En attendant, bénévoles et salariés signalent pour eux.
+- L'alerte d'urgence est envoyée à tous les coordinateurs et gestionnaires concernés ; un véritable planning d'astreinte reste à construire avec SNL.
 - Le dépôt de documents n'est pas couvert par les tests de bout en bout (il exige MinIO et ClamAV) ; il l'est par les tests d'intégration de l'API.
 - Configurer dans Keycloak le flux d'authentification renforcée qui émet `acr=mfa` après un second facteur. En attendant, `EXIGER_SECOND_FACTEUR=false` en développement.
 - Prisma 6 signale des vulnérabilités dans ses dépendances de développement (outil de migration). Elles ne sont pas embarquées dans l'image d'exécution ; la migration vers Prisma 7 est à planifier.

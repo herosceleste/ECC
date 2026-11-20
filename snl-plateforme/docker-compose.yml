@@ -127,6 +127,9 @@ services:
       KEYCLOAK_ADMIN_URL: http://keycloak:8080
       S3_ENDPOINT: http://minio:9000
       CLAMAV_HOTE: clamav
+      # En développement, les courriels sont capturés par Mailpit (http://localhost:8025).
+      SMTP_HOTE: mailpit
+      SMTP_PORT: "1025"
     depends_on:
       migrations:
         condition: service_completed_successfully

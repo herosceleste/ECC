@@ -52,6 +52,17 @@ const schema = z.object({
       message: 'doit contenir 32 octets encodés en base64',
     }),
 
+  /** Envoi des courriels ; sans SMTP_HOTE, les notifications sont seulement journalisées. */
+  SMTP_HOTE: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_TLS_IMPLICITE: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
+  SMTP_UTILISATEUR: z.string().optional(),
+  SMTP_MOT_DE_PASSE: z.string().optional(),
+  EXPEDITEUR_COURRIEL: z.string().default('Plateforme SNL <ne-pas-repondre@snl.localhost>'),
+
   CORS_ORIGINES: z
     .string()
     .default('http://localhost:3000')

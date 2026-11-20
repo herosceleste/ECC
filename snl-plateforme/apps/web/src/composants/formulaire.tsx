@@ -84,6 +84,9 @@ interface PropsChamp {
   pas?: string;
   /** Clavier proposé sur mobile ; « decimal » accepte la virgule française. */
   modeSaisie?: 'decimal' | 'numeric';
+  /** Pour les fichiers : plusieurs à la fois, et types proposés. */
+  multiple?: boolean;
+  accepte?: string;
 }
 
 /** Champ libellé, avec aide et message d'erreur reliés par aria-describedby. */
@@ -100,6 +103,8 @@ export function Champ({
   max,
   pas,
   modeSaisie,
+  multiple,
+  accepte,
 }: PropsChamp) {
   const id = useId();
   const contexte = useContext(ContexteFormulaire);
@@ -145,6 +150,8 @@ export function Champ({
           {...communs}
           type={type}
           inputMode={modeSaisie}
+          multiple={multiple}
+          accept={accepte}
           autoComplete={autoComplete}
           min={min}
           max={max}

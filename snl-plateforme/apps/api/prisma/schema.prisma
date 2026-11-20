@@ -165,6 +165,8 @@ model Logement {
   modifieLe      DateTime       @updatedAt @map("modifie_le")
 
   immeuble       Immeuble?      @relation(fields: [immeubleId], references: [id])
+  interventions  Intervention[]
+  entretiens     EntretienPeriodique[]
 
   @@unique([tenantId, reference])
   @@index([tenantId, organisationId])
@@ -273,4 +275,159 @@ model EvenementAudit {
   @@index([tenantId, entiteType, entiteId])
   @@index([tenantId, utilisateurId])
   @@map("evenement_audit")
+}
+
+// ---------------------------------------------------------------------------
+// Module M1 : travaux et entretien
+// ---------------------------------------------------------------------------
+
+enum CategorieIntervention {
+  PLOMBERIE
+  ELECTRICITE
+  GAZ
+  CHAUFFAGE
+  MENUISERIE
+  SERRURERIE
+  HUMIDITE
+  NUISIBLES
+  ELECTROMENAGER
+  PARTIES_COMMUNES
+  AUTRE
+}
+
+enum PrioriteIntervention {
+  URGENTE
+  HAUTE
+  NORMALE
+  BASSE
+}
+
+enum NatureIntervention {
+  DEPANNAGE
+  ENTRETIEN
+  TRAVAUX
+}
+
+enum StatutIntervention {
+  NOUVEAU
+  QUALIFIE
+  PLANIFIE
+  EN_COURS
+  RESOLU
+  CLOS
+  ANNULE
+}
+
+enum TypeLigneCout {
+  DEVIS
+  FACTURE
+}
+
+/// Signalement d'un problème dans un logement, suivi jusqu'à sa clôture.
+model Intervention {
+  id                  String                @id @default(uuid()) @db.Uuid
+  tenantId            String                @map("tenant_id") @db.Uuid
+  organisationId      String                @map("organisation_id") @db.Uuid
+  logementId          String                @map("logement_id") @db.Uuid
+  categorie           CategorieIntervention
+  description         String
+  urgenceSignalee     Boolean               @default(false) @map("urgence_signalee")
+  priorite            PrioriteIntervention?
+  nature              NatureIntervention?
+  statut              StatutIntervention    @default(NOUVEAU)
+  affecteUtilisateurId String?              @map("affecte_utilisateur_id") @db.Uuid
+  affecteArtisanId    String?               @map("affecte_artisan_id") @db.Uuid
+  datePrevue          DateTime?             @map("date_prevue") @db.Date
+  signalePar          String                @map("signale_par") @db.Uuid
+  entretienId         String?               @map("entretien_id") @db.Uuid
+  creeLe              DateTime              @default(now()) @map("cree_le")
+  modifieLe           DateTime              @updatedAt @map("modifie_le")
+  resoluLe            DateTime?             @map("resolu_le")
+  closLe              DateTime?             @map("clos_le")
+
+  logement            Logement              @relation(fields: [logementId], references: [id])
+  affecteArtisan      Artisan?              @relation(fields: [affecteArtisanId], references: [id])
+  entretien           EntretienPeriodique?  @relation(fields: [entretienId], references: [id])
+  evenements          EvenementIntervention[]
+  couts               LigneCout[]
+
+  @@index([tenantId, organisationId, statut])
+  @@index([tenantId, logementId])
+  @@map("intervention")
+}
+
+/// Fil chronologique d'une intervention : création, qualification, affectation,
+/// changements de statut, commentaires, alertes.
+model EvenementIntervention {
+  id             String       @id @default(uuid()) @db.Uuid
+  tenantId       String       @map("tenant_id") @db.Uuid
+  interventionId String       @map("intervention_id") @db.Uuid
+  type           String
+  auteurId       String?      @map("auteur_id") @db.Uuid
+  details        Json?
+  creeLe         DateTime     @default(now()) @map("cree_le")
+
+  intervention   Intervention @relation(fields: [interventionId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, interventionId, creeLe])
+  @@map("evenement_intervention")
+}
+
+/// Devis ou facture rattaché à une intervention. Montants en centimes.
+model LigneCout {
+  id              String        @id @default(uuid()) @db.Uuid
+  tenantId        String        @map("tenant_id") @db.Uuid
+  interventionId  String        @map("intervention_id") @db.Uuid
+  type            TypeLigneCout
+  libelle         String
+  montantCentimes Int           @map("montant_centimes")
+  saisiPar        String        @map("saisi_par") @db.Uuid
+  creeLe          DateTime      @default(now()) @map("cree_le")
+
+  intervention    Intervention  @relation(fields: [interventionId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, interventionId])
+  @@map("ligne_cout")
+}
+
+/// Carnet d'artisans d'une organisation (M1-F05).
+model Artisan {
+  id             String         @id @default(uuid()) @db.Uuid
+  tenantId       String         @map("tenant_id") @db.Uuid
+  organisationId String         @map("organisation_id") @db.Uuid
+  raisonSociale  String         @map("raison_sociale")
+  siret          String?
+  specialites    CategorieIntervention[]
+  telephone      String?
+  email          String?
+  actif          Boolean        @default(true)
+  creeLe         DateTime       @default(now()) @map("cree_le")
+  modifieLe      DateTime       @updatedAt @map("modifie_le")
+
+  interventions  Intervention[]
+
+  @@index([tenantId, organisationId])
+  @@map("artisan")
+}
+
+/// Entretien récurrent d'un logement : chaudière, détecteurs, ramonage (M1-F07).
+model EntretienPeriodique {
+  id                  String                @id @default(uuid()) @db.Uuid
+  tenantId            String                @map("tenant_id") @db.Uuid
+  organisationId      String                @map("organisation_id") @db.Uuid
+  logementId          String                @map("logement_id") @db.Uuid
+  libelle             String
+  categorie           CategorieIntervention
+  periodiciteMois     Int                   @map("periodicite_mois")
+  prochaineEcheance   DateTime              @map("prochaine_echeance") @db.Date
+  derniereRealisation DateTime?             @map("derniere_realisation") @db.Date
+  actif               Boolean               @default(true)
+  creeLe              DateTime              @default(now()) @map("cree_le")
+  modifieLe           DateTime              @updatedAt @map("modifie_le")
+
+  logement            Logement              @relation(fields: [logementId], references: [id])
+  interventions       Intervention[]
+
+  @@index([tenantId, organisationId, prochaineEcheance])
+  @@map("entretien_periodique")
 }

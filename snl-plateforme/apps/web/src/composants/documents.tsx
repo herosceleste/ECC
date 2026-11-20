@@ -15,14 +15,16 @@ const CATEGORIES = [
 ];
 
 interface Props {
-  entiteType: 'logement' | 'menage' | 'personne' | 'immeuble' | 'organisation';
+  entiteType: 'logement' | 'menage' | 'personne' | 'immeuble' | 'organisation' | 'intervention';
   entiteId: string;
   page: string;
   peutDeposer: boolean;
+  /** Catégorie proposée d'abord (par exemple « photo » pour un signalement). */
+  categorieParDefaut?: string;
 }
 
 /** Documents rattachés à une entité : liste, téléchargement, dépôt. */
-export async function SectionDocuments({ entiteType, entiteId, page, peutDeposer }: Props) {
+export async function SectionDocuments({ entiteType, entiteId, page, peutDeposer, categorieParDefaut }: Props) {
   const documents = await appelerApi<DocumentInfo[]>(
     `/documents?entiteType=${entiteType}&entiteId=${encodeURIComponent(entiteId)}`,
   );
@@ -61,7 +63,7 @@ export async function SectionDocuments({ entiteType, entiteId, page, peutDeposer
             <input type="hidden" name="entiteType" value={entiteType} />
             <input type="hidden" name="entiteId" value={entiteId} />
             <input type="hidden" name="page" value={page} />
-            <Champ nom="categorie" libelle="Catégorie" obligatoire options={CATEGORIES} />
+            <Champ nom="categorie" libelle="Catégorie" obligatoire options={CATEGORIES} valeur={categorieParDefaut} />
             <Champ
               nom="fichier"
               libelle="Fichier"

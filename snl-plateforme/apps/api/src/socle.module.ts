@@ -12,6 +12,7 @@ import { Antivirus, AntivirusClamav } from './documents/antivirus';
 import { DocumentsController } from './documents/documents.controller';
 import { DocumentsService } from './documents/documents.service';
 import { Stockage, StockageS3 } from './documents/stockage';
+import { Notificateur, NotificateurCourriel } from './notifications/notificateur';
 import { ModulesController } from './modules-plateforme/modules.controller';
 import { ModulesService } from './modules-plateforme/modules.service';
 import { OrganisationsController } from './organisations/organisations.controller';
@@ -58,9 +59,10 @@ import { UtilisateursService } from './utilisateurs/utilisateurs.service';
     { provide: FournisseurIdentite, useClass: FournisseurKeycloak },
     { provide: Antivirus, useClass: AntivirusClamav },
     { provide: Stockage, useClass: StockageS3 },
+    { provide: Notificateur, useClass: NotificateurCourriel },
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
   ],
-  exports: [PrismaService, AutorisationService, AuditService, ModulesService, ChiffrementService],
+  exports: [PrismaService, AutorisationService, AuditService, ModulesService, ChiffrementService, Notificateur],
 })
 export class SocleModule {}

@@ -573,3 +573,28 @@ input[type='file'] {
     animation: none !important;
   }
 }
+
+/* --- Fil de suivi d'une intervention ----------------------------------------- */
+
+.fil-evenements {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0 0 0 1rem;
+  border-left: 2px solid var(--bordure);
+}
+
+.fil-evenements li {
+  position: relative;
+  padding: 0 0 0.9rem 0.5rem;
+}
+
+.fil-evenements li::before {
+  content: '';
+  position: absolute;
+  left: -1.42rem;
+  top: 0.45rem;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--accent);
+}
