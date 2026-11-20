@@ -2,7 +2,7 @@
 #   cp .env.example .env   (puis remplir les secrets)
 #   docker compose up -d --build
 #
-# Services : PostgreSQL, Keycloak, MinIO, ClamAV, Mailpit et l'API.
+# Services : PostgreSQL, Keycloak, MinIO, ClamAV, Mailpit, l'API et l'interface web.
 # Les migrations s'exécutent automatiquement avant le démarrage de l'API.
 
 name: snl-plateforme
@@ -136,6 +136,24 @@ services:
         condition: service_healthy
     ports:
       - "127.0.0.1:3001:3001"
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      URL_PUBLIQUE_WEB: http://localhost:3000
+      API_URL: http://api:3001
+      # Le navigateur joint Keycloak par localhost, le serveur Next par le réseau Docker.
+      OIDC_ISSUER: http://localhost:8080/realms/snl
+      OIDC_ISSUER_INTERNE: http://keycloak:8080/realms/snl
+      OIDC_CLIENT_ID: snl-web
+      SECRET_SESSION: ${SECRET_SESSION:?à définir dans .env}
+    depends_on:
+      api:
+        condition: service_started
+    ports:
+      - "127.0.0.1:3000:3000"
 
 volumes:
   donnees-postgres:

@@ -16,6 +16,7 @@ export interface DemandeInvitation {
 
 export interface EspaceUtilisateur {
   tenant_id: string;
+  association_nom: string;
   organisation_id: string;
   organisation_nom: string;
   role: string;
