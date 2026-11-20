@@ -1,0 +1,276 @@
+// Schéma du socle M0 de la plateforme SNL.
+//
+// Règles communes :
+// - toute table métier porte `tenant_id` (l'association racine) et est protégée
+//   par une politique RLS PostgreSQL (migration 0002) ;
+// - les entités du référentiel portent leur source (`source`, `source_ref`) ;
+// - les suppressions de personnes sont d'abord logiques (`supprime_le`).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TypeOrganisation {
+  ASSOCIATION
+  ANTENNE
+  GROUPE_LOCAL
+}
+
+enum RoleMembre {
+  LOCATAIRE
+  DEMANDEUR
+  BENEVOLE
+  COORDINATEUR
+  TRAVAILLEUR_SOCIAL
+  GESTIONNAIRE
+  ADMINISTRATEUR
+  PARTENAIRE
+}
+
+enum StatutUtilisateur {
+  INVITE
+  ACTIF
+  SUSPENDU
+}
+
+enum StatutLogement {
+  DISPONIBLE
+  OCCUPE
+  EN_TRAVAUX
+  HORS_PARC
+}
+
+enum StatutAnalyse {
+  EN_ATTENTE
+  SAIN
+  INFECTE
+}
+
+enum ResultatAudit {
+  SUCCES
+  REFUS
+  ERREUR
+}
+
+model Organisation {
+  id         String           @id @default(uuid()) @db.Uuid
+  tenantId   String           @map("tenant_id") @db.Uuid
+  parentId   String?          @map("parent_id") @db.Uuid
+  type       TypeOrganisation
+  nom        String
+  slug       String
+  /// Chemin matérialisé « /<racine>/<antenne>/<groupe>/ » : un droit sur un
+  /// chemin couvre tous les chemins qui le prolongent.
+  chemin     String
+  creeLe     DateTime         @default(now()) @map("cree_le")
+  modifieLe  DateTime         @updatedAt @map("modifie_le")
+
+  parent     Organisation?    @relation("Arborescence", fields: [parentId], references: [id])
+  enfants    Organisation[]   @relation("Arborescence")
+  adhesions  Adhesion[]
+  modules    ActivationModule[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId, chemin])
+  @@map("organisation")
+}
+
+/// Compte global : une même personne peut appartenir à plusieurs associations.
+model Utilisateur {
+  id                String            @id @default(uuid()) @db.Uuid
+  sujetIdentite     String?           @unique @map("sujet_identite")
+  email             String            @unique
+  nomAffiche        String            @map("nom_affiche")
+  statut            StatutUtilisateur @default(INVITE)
+  derniereConnexion DateTime?         @map("derniere_connexion")
+  creeLe            DateTime          @default(now()) @map("cree_le")
+  modifieLe         DateTime          @updatedAt @map("modifie_le")
+
+  adhesions         Adhesion[]
+
+  @@map("utilisateur")
+}
+
+model Adhesion {
+  id             String       @id @default(uuid()) @db.Uuid
+  tenantId       String       @map("tenant_id") @db.Uuid
+  utilisateurId  String       @map("utilisateur_id") @db.Uuid
+  organisationId String       @map("organisation_id") @db.Uuid
+  role           RoleMembre
+  creeLe         DateTime     @default(now()) @map("cree_le")
+
+  utilisateur    Utilisateur  @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@unique([utilisateurId, organisationId, role])
+  @@index([tenantId, utilisateurId])
+  @@map("adhesion")
+}
+
+model ActivationModule {
+  id             String       @id @default(uuid()) @db.Uuid
+  tenantId       String       @map("tenant_id") @db.Uuid
+  organisationId String       @map("organisation_id") @db.Uuid
+  codeModule     String       @map("code_module")
+  active         Boolean
+  modifieLe      DateTime     @updatedAt @map("modifie_le")
+
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@unique([organisationId, codeModule])
+  @@map("activation_module")
+}
+
+model Immeuble {
+  id             String     @id @default(uuid()) @db.Uuid
+  tenantId       String     @map("tenant_id") @db.Uuid
+  organisationId String     @map("organisation_id") @db.Uuid
+  ligneAdresse   String     @map("ligne_adresse")
+  codePostal     String     @map("code_postal")
+  commune        String
+  codeInsee      String?    @map("code_insee")
+  latitude       Float?
+  longitude      Float?
+  identifiantBan String?    @map("identifiant_ban")
+  source         String     @default("saisie")
+  sourceRef      String?    @map("source_ref")
+  creeLe         DateTime   @default(now()) @map("cree_le")
+  modifieLe      DateTime   @updatedAt @map("modifie_le")
+
+  logements      Logement[]
+
+  @@index([tenantId, organisationId])
+  @@map("immeuble")
+}
+
+model Logement {
+  id             String         @id @default(uuid()) @db.Uuid
+  tenantId       String         @map("tenant_id") @db.Uuid
+  organisationId String         @map("organisation_id") @db.Uuid
+  immeubleId     String?        @map("immeuble_id") @db.Uuid
+  reference      String
+  typologie      String
+  surfaceM2      Decimal?       @map("surface_m2") @db.Decimal(7, 2)
+  etage          Int?
+  classeDpe      String?        @map("classe_dpe")
+  statut         StatutLogement @default(DISPONIBLE)
+  source         String         @default("saisie")
+  sourceRef      String?        @map("source_ref")
+  creeLe         DateTime       @default(now()) @map("cree_le")
+  modifieLe      DateTime       @updatedAt @map("modifie_le")
+
+  immeuble       Immeuble?      @relation(fields: [immeubleId], references: [id])
+
+  @@unique([tenantId, reference])
+  @@index([tenantId, organisationId])
+  @@map("logement")
+}
+
+model Menage {
+  id             String     @id @default(uuid()) @db.Uuid
+  tenantId       String     @map("tenant_id") @db.Uuid
+  organisationId String     @map("organisation_id") @db.Uuid
+  libelle        String
+  source         String     @default("saisie")
+  sourceRef      String?    @map("source_ref")
+  creeLe         DateTime   @default(now()) @map("cree_le")
+  modifieLe      DateTime   @updatedAt @map("modifie_le")
+  supprimeLe     DateTime?  @map("supprime_le")
+
+  personnes      Personne[]
+
+  @@index([tenantId, organisationId])
+  @@map("menage")
+}
+
+model Personne {
+  id                 String    @id @default(uuid()) @db.Uuid
+  tenantId           String    @map("tenant_id") @db.Uuid
+  organisationId     String    @map("organisation_id") @db.Uuid
+  menageId           String?   @map("menage_id") @db.Uuid
+  nom                String
+  prenom             String
+  dateNaissance      DateTime? @map("date_naissance") @db.Date
+  telephone          String?
+  email              String?
+  /// Champs normalisés servant à la détection des doublons (règle M0-R01).
+  nomNormalise       String    @map("nom_normalise")
+  telephoneNormalise String?   @map("telephone_normalise")
+  source             String    @default("saisie")
+  sourceRef          String?   @map("source_ref")
+  creeLe             DateTime  @default(now()) @map("cree_le")
+  modifieLe          DateTime  @updatedAt @map("modifie_le")
+  supprimeLe         DateTime? @map("supprime_le")
+
+  menage             Menage?   @relation(fields: [menageId], references: [id])
+  donneesSensibles   DonneesSensibles?
+
+  @@index([tenantId, nomNormalise])
+  @@index([tenantId, telephoneNormalise])
+  @@map("personne")
+}
+
+/// Données sociales et financières, chiffrées par l'application (AES-256-GCM).
+/// La base ne voit jamais leur contenu en clair.
+model DonneesSensibles {
+  personneId    String   @id @map("personne_id") @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  contenu       Bytes
+  iv            Bytes
+  etiquette     Bytes
+  versionCle    Int      @default(1) @map("version_cle")
+  modifieLe     DateTime @updatedAt @map("modifie_le")
+
+  personne      Personne @relation(fields: [personneId], references: [id], onDelete: Cascade)
+
+  @@map("donnees_sensibles")
+}
+
+model Document {
+  id               String        @id @default(uuid()) @db.Uuid
+  tenantId         String        @map("tenant_id") @db.Uuid
+  organisationId   String        @map("organisation_id") @db.Uuid
+  entiteType       String        @map("entite_type")
+  entiteId         String        @map("entite_id") @db.Uuid
+  categorie        String
+  nomFichier       String        @map("nom_fichier")
+  typeMime         String        @map("type_mime")
+  tailleOctets     Int           @map("taille_octets")
+  empreinteSha256  String        @map("empreinte_sha256")
+  cleStockage      String        @unique @map("cle_stockage")
+  version          Int           @default(1)
+  statutAnalyse    StatutAnalyse @default(EN_ATTENTE) @map("statut_analyse")
+  conserverJusquAu DateTime?     @map("conserver_jusqu_au")
+  deposePar        String        @map("depose_par") @db.Uuid
+  creeLe           DateTime      @default(now()) @map("cree_le")
+  supprimeLe       DateTime?     @map("supprime_le")
+
+  @@index([tenantId, entiteType, entiteId])
+  @@map("document")
+}
+
+/// Journal d'audit en ajout seul : l'application ne peut ni modifier ni
+/// supprimer une ligne (droits retirés dans la migration 0002).
+model EvenementAudit {
+  id             BigInt        @id @default(autoincrement())
+  tenantId       String        @map("tenant_id") @db.Uuid
+  horodatage     DateTime      @default(now())
+  utilisateurId  String?       @map("utilisateur_id") @db.Uuid
+  action         String
+  entiteType     String        @map("entite_type")
+  entiteId       String?       @map("entite_id")
+  organisationId String?       @map("organisation_id") @db.Uuid
+  resultat       ResultatAudit
+  adresseIp      String?       @map("adresse_ip")
+  details        Json?
+
+  @@index([tenantId, horodatage])
+  @@index([tenantId, entiteType, entiteId])
+  @@index([tenantId, utilisateurId])
+  @@map("evenement_audit")
+}
