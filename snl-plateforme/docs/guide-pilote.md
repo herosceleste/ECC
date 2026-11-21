@@ -40,7 +40,7 @@ Un ordinateur ou un serveur avec Docker et Docker Compose, 4 Go de mémoire libr
      --admin-email prenom.nom@exemple.org --admin-nom "Prénom Nom"
    ```
 
-5. Charger les données de démonstration (une antenne, deux groupes, des logements, des ménages fictifs, un artisan, un entretien) :
+5. Charger les données de démonstration (une antenne, deux groupes, des logements, des ménages fictifs, un artisan, un entretien, une activité ; modules Travaux et Bénévoles activés) :
 
    ```bash
    docker compose run --rm \
@@ -86,8 +86,8 @@ Chaque rôle a quelques gestes à essayer. L'administrateur invite les autres me
 | Rôle | À essayer |
 | --- | --- |
 | Administrateur | Inviter l'équipe (menu Équipe), activer ou désactiver un module pour un groupe (menu Organisations), consulter le journal |
-| Coordinateur | Ajouter un logement, qualifier et confier un signalement, saisir une facture, programmer un entretien |
-| Bénévole | Signaler un problème avec une photo, suivre son traitement, rouvrir un signalement résolu |
+| Coordinateur | Ajouter un logement, qualifier et confier un signalement, saisir une facture, programmer un entretien, proposer une activité, désigner un bénévole référent d'un ménage |
+| Bénévole | Signaler un problème avec une photo, s'inscrire au chantier de démonstration puis s'en désister, indiquer ses disponibilités, ajouter ses activités à son agenda |
 | Travailleur social | Créer un ménage, ajouter ses membres, constater l'alerte de doublon, renseigner la situation sociale |
 
 ### Faire remonter ses retours

@@ -431,3 +431,113 @@ model EntretienPeriodique {
   @@index([tenantId, organisationId, prochaineEcheance])
   @@map("entretien_periodique")
 }
+
+// ---------------------------------------------------------------------------
+// Module M2 : coordination des bénévoles
+// ---------------------------------------------------------------------------
+
+enum TypeActivite {
+  VISITE
+  CHANTIER
+  PERMANENCE
+  REUNION
+  FORMATION
+  AUTRE
+}
+
+enum StatutInscription {
+  INSCRIT
+  LISTE_ATTENTE
+  DESISTE
+}
+
+/// Profil d'un membre dans une association (M2-F01). Un même compte peut avoir
+/// un profil différent dans chaque association.
+model ProfilBenevole {
+  id              String    @id @default(uuid()) @db.Uuid
+  tenantId        String    @map("tenant_id") @db.Uuid
+  utilisateurId   String    @map("utilisateur_id") @db.Uuid
+  telephone       String?
+  /// M2-R03 : le téléphone n'est alors visible que des coordinateurs.
+  telephoneMasque Boolean   @default(false) @map("telephone_masque")
+  competences     String[]
+  centresInteret  String[]  @map("centres_interet")
+  dateArrivee     DateTime? @map("date_arrivee") @db.Date
+  modifieLe       DateTime  @updatedAt @map("modifie_le")
+
+  @@unique([tenantId, utilisateurId])
+  @@map("profil_benevole")
+}
+
+/// Disponibilité récurrente (un jour de la semaine) ou ponctuelle (une date).
+model Disponibilite {
+  id            String    @id @default(uuid()) @db.Uuid
+  tenantId      String    @map("tenant_id") @db.Uuid
+  utilisateurId String    @map("utilisateur_id") @db.Uuid
+  jourSemaine   Int?      @map("jour_semaine")
+  date          DateTime? @db.Date
+  heureDebut    String    @map("heure_debut")
+  heureFin      String    @map("heure_fin")
+  commentaire   String?
+  creeLe        DateTime  @default(now()) @map("cree_le")
+
+  @@index([tenantId, utilisateurId])
+  @@map("disponibilite")
+}
+
+/// Activité du groupe : visite, chantier, permanence, réunion… (M2-F03).
+model Activite {
+  id                  String        @id @default(uuid()) @db.Uuid
+  tenantId            String        @map("tenant_id") @db.Uuid
+  organisationId      String        @map("organisation_id") @db.Uuid
+  type                TypeActivite
+  titre               String
+  description         String?
+  lieu                String?
+  debut               DateTime
+  fin                 DateTime
+  /// Nombre de places ; vide = sans limite.
+  places              Int?
+  /// Chantier collectif lié à une intervention du module M1 (M1-F08).
+  interventionId      String?       @map("intervention_id") @db.Uuid
+  creePar             String        @map("cree_par") @db.Uuid
+  annuleeLe           DateTime?     @map("annulee_le")
+  rappelEnvoyeLe      DateTime?     @map("rappel_envoye_le")
+  alerteSansInscritLe DateTime?     @map("alerte_sans_inscrit_le")
+  creeLe              DateTime      @default(now()) @map("cree_le")
+  modifieLe           DateTime      @updatedAt @map("modifie_le")
+
+  inscriptions        Inscription[]
+
+  @@index([tenantId, organisationId, debut])
+  @@map("activite")
+}
+
+model Inscription {
+  id            String            @id @default(uuid()) @db.Uuid
+  tenantId      String            @map("tenant_id") @db.Uuid
+  activiteId    String            @map("activite_id") @db.Uuid
+  utilisateurId String            @map("utilisateur_id") @db.Uuid
+  statut        StatutInscription
+  creeLe        DateTime          @default(now()) @map("cree_le")
+  modifieLe     DateTime          @updatedAt @map("modifie_le")
+
+  activite      Activite          @relation(fields: [activiteId], references: [id], onDelete: Cascade)
+
+  @@unique([activiteId, utilisateurId])
+  @@index([tenantId, utilisateurId])
+  @@map("inscription")
+}
+
+/// Bénévole référent d'un ménage (M2-F05).
+model Referent {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  menageId      String   @map("menage_id") @db.Uuid
+  utilisateurId String   @map("utilisateur_id") @db.Uuid
+  creeLe        DateTime @default(now()) @map("cree_le")
+
+  @@unique([menageId, utilisateurId])
+  @@index([tenantId, utilisateurId])
+  @@map("referent")
+}

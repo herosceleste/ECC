@@ -65,6 +65,12 @@ const schema = z.object({
   SMTP_MOT_DE_PASSE: z.string().optional(),
   EXPEDITEUR_COURRIEL: z.string().default('Plateforme SNL <ne-pas-repondre@snl.localhost>'),
 
+  /** Rappels et alertes planifiés (toutes les 15 minutes) ; « false » pour les désactiver. */
+  TACHES_PLANIFIEES: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((v) => v === 'true'),
+
   CORS_ORIGINES: z
     .string()
     .default('http://localhost:3000')

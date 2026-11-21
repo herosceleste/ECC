@@ -9,7 +9,8 @@ export default async function preparer(): Promise<void> {
   const prisma = new PrismaClient({ datasources: { db: { url: process.env.DATABASE_URL_PROPRIETAIRE } } });
   try {
     await prisma.$executeRawUnsafe(`
-      TRUNCATE evenement_intervention, ligne_cout, intervention, entretien_periodique, artisan,
+      TRUNCATE inscription, activite, referent, disponibilite, profil_benevole,
+               evenement_intervention, ligne_cout, intervention, entretien_periodique, artisan,
                evenement_audit, document, donnees_sensibles, personne, menage, logement,
                immeuble, activation_module, adhesion, utilisateur, organisation RESTART IDENTITY CASCADE`);
 
@@ -44,8 +45,13 @@ export default async function preparer(): Promise<void> {
       await prisma.adhesion.create({ data: { ...t, utilisateurId: u.id, organisationId, role } });
     }
 
-    // Module M1 activé pour toute l'antenne.
-    await prisma.activationModule.create({ data: { ...t, organisationId: antenne, codeModule: 'M1', active: true } });
+    // Modules M1 et M2 activés pour toute l'antenne.
+    await prisma.activationModule.createMany({
+      data: [
+        { ...t, organisationId: antenne, codeModule: 'M1', active: true },
+        { ...t, organisationId: antenne, codeModule: 'M2', active: true },
+      ],
+    });
 
     const immeuble = await prisma.immeuble.create({
       data: { ...t, organisationId: evry, ligneAdresse: '12 rue des Tilleuls', codePostal: '91000', commune: 'Évry-Courcouronnes' },

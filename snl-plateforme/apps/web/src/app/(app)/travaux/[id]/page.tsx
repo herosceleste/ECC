@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import { SectionDocuments } from '@/composants/documents';
 import { BoutonEnvoi, Champ, Formulaire } from '@/composants/formulaire';
 import { appelerApi, ErreurApi } from '@/lib/api';
+import { chargerMoi, cheminsOrganisations } from '@/lib/contexte';
+import { peut } from '@/lib/droits';
 import { dateCourte, dateHeure } from '@/lib/format';
 import {
   ACTIONS_STATUT,
@@ -36,6 +38,11 @@ export default async function FicheIntervention({
     throw erreur;
   }
   const { droits } = intervention;
+  const [moi, chemins] = await Promise.all([chargerMoi(), cheminsOrganisations()]);
+  // Chantier collectif (M1-F08) : proposé à qui coordonne les bénévoles du groupe.
+  const organiserChantier =
+    ['QUALIFIE', 'PLANIFIE', 'EN_COURS'].includes(intervention.statut) &&
+    peut(moi.adhesions, 'benevoles:gerer', chemins.get(intervention.organisationId));
   const modifiable = ['NOUVEAU', 'QUALIFIE', 'PLANIFIE', 'EN_COURS'].includes(intervention.statut);
   const affectables =
     droits.gerer && modifiable
@@ -124,6 +131,17 @@ export default async function FicheIntervention({
               <dd>{dateCourte(intervention.datePrevue)}</dd>
             </dl>
           </section>
+
+          {organiserChantier ? (
+            <p>
+              <Link
+                className="bouton bouton-secondaire"
+                href={`/benevoles/activites/nouvelle?intervention=${intervention.id}&organisation=${intervention.organisationId}`}
+              >
+                Organiser un chantier collectif
+              </Link>
+            </p>
+          ) : null}
 
           {droits.transitions.length > 0 ? (
             <section className="carte" aria-labelledby="titre-avancement">

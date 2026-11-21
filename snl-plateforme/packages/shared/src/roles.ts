@@ -39,6 +39,10 @@ export const PERMISSIONS = [
   'travaux:signaler',
   'travaux:gerer',
   'artisan:gerer',
+  // Module M2 Coordination des bénévoles
+  'benevoles:lire',
+  'benevoles:gerer',
+  'activite:participer',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -64,6 +68,8 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
     'document:lire',
     'travaux:lire',
     'travaux:signaler',
+    'benevoles:lire',
+    'activite:participer',
   ],
   COORDINATEUR: [
     'organisation:lire',
@@ -78,6 +84,9 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
     'travaux:signaler',
     'travaux:gerer',
     'artisan:gerer',
+    'benevoles:lire',
+    'benevoles:gerer',
+    'activite:participer',
   ],
   TRAVAILLEUR_SOCIAL: [
     'organisation:lire',
@@ -92,6 +101,8 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
     'document:ecrire',
     'travaux:lire',
     'travaux:signaler',
+    'benevoles:lire',
+    'activite:participer',
   ],
   GESTIONNAIRE: [
     'organisation:lire',
@@ -108,6 +119,9 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
     'travaux:signaler',
     'travaux:gerer',
     'artisan:gerer',
+    'benevoles:lire',
+    'benevoles:gerer',
+    'activite:participer',
   ],
   ADMINISTRATEUR: [
     'organisation:lire',
@@ -122,6 +136,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<Role, readonly Permission[]>> = {
     'audit:lire',
     'rgpd:traiter',
     'travaux:lire',
+    'benevoles:lire',
   ],
 };
 

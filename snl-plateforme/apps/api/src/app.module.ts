@@ -1,5 +1,6 @@
 import { DynamicModule, Global, Module } from '@nestjs/common';
 import { CONFIGURATION, type Configuration } from './config/configuration';
+import { BenevolesModule } from './benevoles/benevoles.module';
 import { SocleModule } from './socle.module';
 import { TravauxModule } from './travaux/travaux.module';
 
@@ -21,7 +22,7 @@ export class AppModule {
   static avec(config: Configuration): DynamicModule {
     return {
       module: AppModule,
-      imports: [ConfigurationModule.avec(config), SocleModule, TravauxModule],
+      imports: [ConfigurationModule.avec(config), SocleModule, TravauxModule, BenevolesModule],
     };
   }
 }

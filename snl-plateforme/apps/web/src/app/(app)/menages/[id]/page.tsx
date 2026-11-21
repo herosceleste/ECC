@@ -7,7 +7,9 @@ import { appelerApi, ErreurApi } from '@/lib/api';
 import { chargerMoi, cheminsOrganisations, nomsOrganisations } from '@/lib/contexte';
 import { peut } from '@/lib/droits';
 import { dateCourte } from '@/lib/format';
-import type { Menage } from '@/lib/types';
+import { BoutonEnvoi, Champ, Formulaire } from '@/composants/formulaire';
+import type { Menage, MembreAnnuaire, Referent } from '@/lib/types';
+import { ajouterReferent, retirerReferent } from '../../benevoles/actions';
 import { ajouterPersonne } from '../actions';
 
 export const metadata: Metadata = { title: 'Ménage' };
@@ -30,6 +32,19 @@ export default async function FicheMenage({
   const [moi, noms, chemins] = await Promise.all([chargerMoi(), nomsOrganisations(), cheminsOrganisations()]);
   const chemin = chemins.get(menage.organisationId);
   const personnes = menage.personnes ?? [];
+  // Bénévoles référents (module M2), si le module est activé pour ce ménage.
+  const referents = peut(moi.adhesions, 'benevoles:lire', chemin)
+    ? await appelerApi<Referent[]>(`/benevoles/menages/${menage.id}/referents`).catch((erreur: unknown) => {
+        if (erreur instanceof ErreurApi && erreur.statut === 403) return null;
+        throw erreur;
+      })
+    : null;
+  const gererReferents = referents !== null && peut(moi.adhesions, 'benevoles:gerer', chemin);
+  const candidats = gererReferents
+    ? (await appelerApi<MembreAnnuaire[]>('/benevoles/annuaire')).filter(
+        (m) => m.statut === 'ACTIF' && !referents.some((r) => r.utilisateurId === m.id),
+      )
+    : [];
 
   return (
     <>
@@ -88,6 +103,44 @@ export default async function FicheMenage({
           ) : null}
         </div>
         <div>
+          {referents ? (
+            <section className="carte" aria-labelledby="titre-referents">
+              <h2 id="titre-referents">Bénévoles référents</h2>
+              <p className="aide">Ils voient le nom et les coordonnées du ménage, jamais sa situation sociale.</p>
+              {referents.length === 0 ? (
+                <p className="aide">Aucun référent pour le moment.</p>
+              ) : (
+                <ul>
+                  {referents.map((r) => (
+                    <li key={r.id}>
+                      {r.nomAffiche}
+                      {gererReferents ? (
+                        <Formulaire action={retirerReferent} libelle={`Retirer ${r.nomAffiche}`}>
+                          <input type="hidden" name="id" value={r.id} />
+                          <input type="hidden" name="menageId" value={menage.id} />
+                          <BoutonEnvoi variante="secondaire">Retirer</BoutonEnvoi>
+                        </Formulaire>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {gererReferents && candidats.length > 0 ? (
+                <Formulaire action={ajouterReferent} libelle="Ajouter un référent">
+                  <input type="hidden" name="menageId" value={menage.id} />
+                  <Champ
+                    nom="utilisateurId"
+                    libelle="Ajouter un référent"
+                    obligatoire
+                    options={candidats.map((c) => ({ valeur: c.id, libelle: c.nomAffiche }))}
+                  />
+                  <div className="actions">
+                    <BoutonEnvoi variante="secondaire">Ajouter</BoutonEnvoi>
+                  </div>
+                </Formulaire>
+              ) : null}
+            </section>
+          ) : null}
           <SectionDocuments
             entiteType="menage"
             entiteId={menage.id}

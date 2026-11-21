@@ -23,7 +23,8 @@ export function clientProprietaire(): PrismaClient {
 
 export async function viderBase(prisma: PrismaClient): Promise<void> {
   await prisma.$executeRawUnsafe(`
-    TRUNCATE evenement_intervention, ligne_cout, intervention, entretien_periodique, artisan,
+    TRUNCATE inscription, activite, referent, disponibilite, profil_benevole,
+             evenement_intervention, ligne_cout, intervention, entretien_periodique, artisan,
              evenement_audit, document, donnees_sensibles, personne, menage, logement,
              immeuble, activation_module, adhesion, utilisateur, organisation RESTART IDENTITY CASCADE`);
 }
@@ -142,6 +143,7 @@ export async function demarrerApplication(): Promise<ApplicationDeTest> {
     S3_ACCESS_KEY: 'test',
     S3_SECRET_KEY: 'test',
     CLE_CHIFFREMENT_DONNEES: randomBytes(32).toString('base64'),
+    TACHES_PLANIFIEES: 'false',
   });
   const fournisseur = new FauxFournisseur();
   const stockage = new FauxStockage();

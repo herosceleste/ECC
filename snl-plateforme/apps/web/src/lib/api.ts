@@ -23,6 +23,8 @@ interface OptionsAppel {
   formulaire?: FormData;
   /** Routes de l'API qui précèdent le choix d'une association (« moi », « espaces »). */
   sansAssociation?: boolean;
+  /** Renvoie le corps tel quel (fichier d'agenda), sans l'interpréter comme du JSON. */
+  brut?: boolean;
 }
 
 /**
@@ -55,6 +57,7 @@ export async function appelerApi<T>(chemin: string, options: OptionsAppel = {}):
 
   if (reponse.status === 401) redirect('/connexion?expire=1');
   const texte = await reponse.text();
+  if (options.brut && reponse.ok) return texte as T;
   const donnees: unknown = texte ? JSON.parse(texte) : null;
   if (!reponse.ok) throw erreurDepuisReponse(reponse.status, donnees);
   return donnees as T;

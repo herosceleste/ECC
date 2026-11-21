@@ -1,7 +1,8 @@
 /**
  * Ajoute des données de démonstration, entièrement fictives, à une association
  * existante : une antenne, deux groupes locaux, des logements, deux ménages,
- * un artisan et un entretien périodique ; le module M1 est activé.
+ * un artisan, un entretien périodique et une activité ; les modules M1 et M2
+ * sont activés.
  *
  * À n'utiliser que pour une découverte ou une formation, jamais sur une base
  * qui contient de vraies données. Connexion du propriétaire de la base :
@@ -45,7 +46,12 @@ async function principal(): Promise<void> {
           },
         });
       }
-      await tx.activationModule.create({ data: { ...t, organisationId: antenne, codeModule: 'M1', active: true } });
+      await tx.activationModule.createMany({
+        data: [
+          { ...t, organisationId: antenne, codeModule: 'M1', active: true },
+          { ...t, organisationId: antenne, codeModule: 'M2', active: true },
+        ],
+      });
 
       const immeuble = await tx.immeuble.create({
         data: { ...t, organisationId: groupes.nord as string, ligneAdresse: '1 rue de l’Exemple', codePostal: '91000', commune: 'Villefictive', source: 'demo' },
@@ -81,6 +87,21 @@ async function principal(): Promise<void> {
           ...t, organisationId: groupes.nord as string, logementId: ids[0] as string,
           libelle: 'Entretien annuel de la chaudière', categorie: 'CHAUFFAGE', periodiciteMois: 12,
           prochaineEcheance: new Date(Date.now() + 20 * 86_400_000),
+        },
+      });
+
+      const administrateur = await tx.adhesion.findFirst({
+        where: { organisationId: association.id, role: 'ADMINISTRATEUR' },
+        select: { utilisateurId: true },
+      });
+      if (!administrateur) throw new Error('L’association n’a pas d’administrateur.');
+      const dansUneSemaine = new Date(Date.now() + 7 * 86_400_000);
+      dansUneSemaine.setUTCHours(13, 0, 0, 0);
+      await tx.activite.create({
+        data: {
+          ...t, organisationId: groupes.nord as string, type: 'CHANTIER', titre: 'Chantier peinture (démo)',
+          lieu: '1 rue de l’Exemple, Villefictive', debut: dansUneSemaine,
+          fin: new Date(dansUneSemaine.getTime() + 3 * 3_600_000), places: 4, creePar: administrateur.utilisateurId,
         },
       });
     });

@@ -190,3 +190,69 @@ export interface HistoriqueLogement {
   entretiens: EntretienPeriodique[];
   coutTotalCentimes: number;
 }
+
+// --- Module M2 Coordination des bénévoles ---------------------------------------
+
+export type StatutInscription = 'INSCRIT' | 'LISTE_ATTENTE' | 'DESISTE';
+
+export interface Activite {
+  id: string;
+  organisationId: string;
+  type: string;
+  titre: string;
+  description: string | null;
+  lieu: string | null;
+  debut: string;
+  fin: string;
+  places: number | null;
+  interventionId: string | null;
+  annuleeLe: string | null;
+  inscrits: number;
+  enAttente?: number;
+  monStatut: StatutInscription | null;
+}
+
+export interface ActiviteDetail extends Activite {
+  creeParNom: string;
+  inscriptions: { utilisateurId: string; nomAffiche: string; statut: StatutInscription }[];
+  droits: { gerer: boolean; participer: boolean };
+}
+
+export interface Disponibilite {
+  id: string;
+  jourSemaine: number | null;
+  date: string | null;
+  heureDebut: string;
+  heureFin: string;
+  commentaire: string | null;
+}
+
+export interface MembreAnnuaire {
+  id: string;
+  nomAffiche: string;
+  email: string;
+  statut: string;
+  roles: { role: string; organisation: { id: string; nom: string } }[];
+  telephone: string | null;
+  competences: string[];
+  centresInteret: string[];
+  dateArrivee: string | null;
+  disponibilites?: Disponibilite[];
+}
+
+export interface MonProfil {
+  profil: {
+    telephone: string | null;
+    telephoneMasque: boolean;
+    competences: string[];
+    centresInteret: string[];
+    dateArrivee: string | null;
+  };
+  disponibilites: Disponibilite[];
+}
+
+export interface Referent {
+  id: string;
+  utilisateurId: string;
+  nomAffiche: string;
+}

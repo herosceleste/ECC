@@ -29,6 +29,7 @@ export default async function MiseEnPageApplication({ children }: { children: Re
     ...(peut(a, 'logement:lire') ? [{ href: '/logements', libelle: 'Logements' }] : []),
     ...(peut(a, 'menage:lire') ? [{ href: '/menages', libelle: 'Ménages' }] : []),
     ...(peut(a, 'travaux:lire') ? [{ href: '/travaux', libelle: 'Travaux' }] : []),
+    ...(peut(a, 'benevoles:lire') ? [{ href: '/benevoles', libelle: 'Bénévoles' }] : []),
     ...(peut(a, 'utilisateur:lire') ? [{ href: '/utilisateurs', libelle: 'Équipe' }] : []),
     ...(peut(a, 'audit:lire') ? [{ href: '/journal', libelle: 'Journal' }] : []),
   ];

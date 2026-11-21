@@ -56,7 +56,7 @@ Le premier module métier permet de signaler un problème dans un logement, de l
 | M1-F05 | Carnet d'artisans, partagé de l'antenne vers ses groupes | Fait |
 | M1-F06 | Devis, factures et coût de chaque intervention | Fait |
 | M1-F07 | Entretiens périodiques, échéances et relance | Fait (relance par courriel : à faire) |
-| M1-F08 | Chantiers collectifs de bénévoles | À faire, avec M2 |
+| M1-F08 | Chantiers collectifs de bénévoles | Fait (avec M2) |
 | M1-F09 | Avis du locataire après résolution | À faire, avec M14 |
 | M1-R01 | Signalement urgent : alerte immédiate et numéros d'urgence affichés | Fait |
 | M1-R02 | Clôture réservée aux coordinateurs et gestionnaires, réouverture sous 15 jours | Fait |
@@ -69,12 +69,34 @@ Quelques précisions de fonctionnement :
 - Un signalement peut rester enregistré même si une photo est refusée (format, antivirus) : la page l'indique et propose de la déposer de nouveau.
 - Les numéros d'urgence affichés (0 800 47 33 33 pour le gaz, 18, 112) sont à faire valider par SNL, avec les éventuels numéros d'astreinte propres à chaque antenne.
 
+## Module M2 Coordination des bénévoles
+
+Le deuxième module remplace les échanges dispersés par un planning partagé : chacun s'inscrit aux activités du groupe, la coordination sait qui vient, et personne n'oublie une visite.
+
+| Exigence | Contenu | État |
+| --- | --- | --- |
+| M2-F01 | Annuaire du groupe : coordonnées, compétences, centres d'intérêt, date d'arrivée | Fait |
+| M2-F02 | Disponibilités récurrentes ou ponctuelles | Fait |
+| M2-F03 | Activités (visite, chantier, permanence, réunion…) avec nombre de places | Fait |
+| M2-F04 | Rappel automatique la veille, désistement en un geste | Fait |
+| M2-F05 | Bénévoles référents des ménages | Fait |
+| M2-F06 | Planning et export vers son agenda (fichier iCalendar) | Fait ; abonnement d'agenda : à faire |
+| M2-F07 | Annonces avec accusé de lecture | À faire |
+| M2-F08 | Heures de bénévolat | À faire |
+| M2-R01 | Un référent ne voit jamais les données sociales du ménage | Fait |
+| M2-R02 | Alerte à la coordination si personne n'est inscrit 48 heures avant | Fait |
+| M2-R03 | Téléphone masquable, visible des seuls coordinateurs | Fait |
+
+Quand une activité est complète, les suivants passent en liste d'attente ; à chaque désistement, la première personne en attente prend la place et en est prévenue, et la coordination reçoit un courriel. Les inscriptions simultanées sont sérialisées : deux personnes ne peuvent pas obtenir la même dernière place. Depuis une intervention du module M1, un coordinateur peut organiser un chantier collectif (M1-F08).
+
+Les rappels et alertes sont envoyés par l'API elle-même, toutes les 15 minutes (`TACHES_PLANIFIEES=false` pour les désactiver). Chaque envoi est réservé en base avant de partir : même avec plusieurs instances de l'API, un rappel n'est envoyé qu'une fois.
+
 ## Organisation du code
 
 ```text
 snl-plateforme/
 ├── apps/web/                 interface Next.js (pages, actions serveur, session)
-├── apps/api/                 API NestJS : socle et modules métier (src/travaux pour M1)
+├── apps/api/                 API NestJS : socle et modules métier (src/travaux, src/benevoles)
 │   ├── prisma/               schéma et migrations (dont la sécurité RLS)
 │   ├── src/
 │   │   ├── auth/             jeton OIDC, garde, invitation Keycloak
