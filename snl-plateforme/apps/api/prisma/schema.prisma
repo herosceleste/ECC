@@ -541,3 +541,99 @@ model Referent {
   @@index([tenantId, utilisateurId])
   @@map("referent")
 }
+
+// ---------------------------------------------------------------------------
+// Module M3 : accueil des bénévoles
+// ---------------------------------------------------------------------------
+
+enum TypeContenuAccueil {
+  ETAPE
+  FICHE
+  FAQ
+  CONTACT
+  ENGAGEMENT_CHARTE
+  ENGAGEMENT_CONFIDENTIALITE
+}
+
+/// Contenu d'accueil rattaché à une organisation (M3-F02). Ceux de
+/// l'association sont nationaux ; une antenne ou un groupe ajoute les siens
+/// sans pouvoir modifier ceux du dessus (M3-R02).
+model ContenuAccueil {
+  id             String             @id @default(uuid()) @db.Uuid
+  tenantId       String             @map("tenant_id") @db.Uuid
+  organisationId String             @map("organisation_id") @db.Uuid
+  type           TypeContenuAccueil
+  titre          String
+  corps          String
+  lienVideo      String?            @map("lien_video")
+  ordre          Int                @default(0)
+  publie         Boolean            @default(true)
+  creePar        String             @map("cree_par") @db.Uuid
+  creeLe         DateTime           @default(now()) @map("cree_le")
+  modifieLe      DateTime           @updatedAt @map("modifie_le")
+
+  progressions   ProgressionAccueil[]
+
+  @@index([tenantId, organisationId, type])
+  @@map("contenu_accueil")
+}
+
+/// Étape du parcours terminée par une personne (M3-F01).
+model ProgressionAccueil {
+  id            String         @id @default(uuid()) @db.Uuid
+  tenantId      String         @map("tenant_id") @db.Uuid
+  utilisateurId String         @map("utilisateur_id") @db.Uuid
+  contenuId     String         @map("contenu_id") @db.Uuid
+  termineeLe    DateTime       @default(now()) @map("terminee_le")
+
+  contenu       ContenuAccueil @relation(fields: [contenuId], references: [id], onDelete: Cascade)
+
+  @@unique([utilisateurId, contenuId])
+  @@index([tenantId, utilisateurId])
+  @@map("progression_accueil")
+}
+
+/// Signature de la charte ou de l'engagement de confidentialité (M3-F06).
+/// L'empreinte identifie le texte signé : si le texte change, il faut signer à nouveau.
+model EngagementSigne {
+  id            String             @id @default(uuid()) @db.Uuid
+  tenantId      String             @map("tenant_id") @db.Uuid
+  utilisateurId String             @map("utilisateur_id") @db.Uuid
+  type          TypeContenuAccueil
+  empreinte     String
+  signeLe       DateTime           @default(now()) @map("signe_le")
+
+  @@unique([tenantId, utilisateurId, type, empreinte])
+  @@map("engagement_signe")
+}
+
+/// Parrain d'un nouveau bénévole (M3-F04).
+model Parrainage {
+  id               String       @id @default(uuid()) @db.Uuid
+  tenantId         String       @map("tenant_id") @db.Uuid
+  organisationId   String       @map("organisation_id") @db.Uuid
+  filleulId        String       @map("filleul_id") @db.Uuid
+  parrainId        String       @map("parrain_id") @db.Uuid
+  debut            DateTime     @default(now())
+  /// Relance envoyée au parrain quand le parcours traîne (critère M3-3).
+  relanceEnvoyeeLe DateTime?    @map("relance_envoyee_le")
+  creePar          String       @map("cree_par") @db.Uuid
+
+  points           PointEtape[]
+
+  @@unique([tenantId, filleulId])
+  @@map("parrainage")
+}
+
+model PointEtape {
+  id           String     @id @default(uuid()) @db.Uuid
+  tenantId     String     @map("tenant_id") @db.Uuid
+  parrainageId String     @map("parrainage_id") @db.Uuid
+  date         DateTime   @db.Date
+  faitLe       DateTime?  @map("fait_le")
+
+  parrainage   Parrainage @relation(fields: [parrainageId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, parrainageId])
+  @@map("point_etape")
+}

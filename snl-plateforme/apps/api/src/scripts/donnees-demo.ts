@@ -1,8 +1,8 @@
 /**
  * Ajoute des données de démonstration, entièrement fictives, à une association
  * existante : une antenne, deux groupes locaux, des logements, deux ménages,
- * un artisan, un entretien périodique et une activité ; les modules M1 et M2
- * sont activés.
+ * un artisan, un entretien périodique, une activité et un parcours d'accueil ;
+ * les modules M1, M2 et M3 sont activés.
  *
  * À n'utiliser que pour une découverte ou une formation, jamais sur une base
  * qui contient de vraies données. Connexion du propriétaire de la base :
@@ -50,6 +50,7 @@ async function principal(): Promise<void> {
         data: [
           { ...t, organisationId: antenne, codeModule: 'M1', active: true },
           { ...t, organisationId: antenne, codeModule: 'M2', active: true },
+          { ...t, organisationId: antenne, codeModule: 'M3', active: true },
         ],
       });
 
@@ -95,6 +96,21 @@ async function principal(): Promise<void> {
         select: { utilisateurId: true },
       });
       if (!administrateur) throw new Error('L’association n’a pas d’administrateur.');
+      // Parcours d'accueil national de démonstration (M3), à remplacer par les vrais contenus de SNL.
+      const contenus = [
+        ['ETAPE', 'Découvrir SNL', 'L’histoire de l’association, ses valeurs et la façon dont un groupe local fonctionne.', 1],
+        ['ETAPE', 'Lire la charte et l’engagement de confidentialité', 'Rendez-vous dans « Charte et engagements » pour les lire et les signer.', 2],
+        ['ETAPE', 'Participer à une visite', 'Accompagnez un bénévole expérimenté lors d’une visite chez un ménage.', 3],
+        ['FAQ', 'Comment signaler une fuite d’eau ?', 'Menu Travaux, puis « Signaler un problème ». Cochez « urgent » si l’eau coule.', 0],
+        ['FAQ', 'Que faire si je ne peux plus venir à une activité ?', 'Désistez-vous depuis le planning : la personne suivante en liste d’attente prend votre place.', 0],
+        ['CONTACT', 'Secrétariat de l’antenne (démo)', 'Du lundi au vendredi, 9 h – 17 h.\n01 00 00 00 00', 0],
+      ] as const;
+      for (const [type, titre, corps, ordre] of contenus) {
+        await tx.contenuAccueil.create({
+          data: { ...t, organisationId: association.id, type, titre, corps, ordre, creePar: administrateur.utilisateurId },
+        });
+      }
+
       const dansUneSemaine = new Date(Date.now() + 7 * 86_400_000);
       dansUneSemaine.setUTCHours(13, 0, 0, 0);
       await tx.activite.create({

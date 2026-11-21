@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import type { Role } from '@snl/shared';
 import type { PrincipalAssociation } from '../auth/principal';
 import { AutorisationService } from '../autorisation/autorisation.service';
+import { ConfidentialiteService } from '../confidentialite/confidentialite.service';
 import { exigerSurOrganisation } from '../autorisation/acces';
 import { ligneeDepuisChemin, ModulesService } from '../modules-plateforme/modules.service';
 import { chargerOrganisation } from '../organisations/organisations.service';
@@ -32,6 +33,7 @@ export class EquipeService {
     private readonly prisma: PrismaService,
     private readonly autorisation: AutorisationService,
     private readonly modules: ModulesService,
+    private readonly confidentialite: ConfidentialiteService,
   ) {}
 
   // --- Annuaire ---------------------------------------------------------------------
@@ -180,11 +182,14 @@ export class EquipeService {
   mesMenages(principal: PrincipalAssociation) {
     return this.prisma.dansAssociation(principal.tenantId, async (tx) => {
       const referents = await tx.referent.findMany({ where: { utilisateurId: principal.utilisateurId } });
-      return tx.menage.findMany({
+      const menages = await tx.menage.findMany({
         where: { id: { in: referents.map((r) => r.menageId) }, supprimeLe: null },
         select: { id: true, libelle: true, organisationId: true },
         orderBy: { libelle: 'asc' },
       });
+      // M3-R01 : sans engagement signé, les ménages concernés n'apparaissent pas.
+      const fermees = await this.confidentialite.organisationsFermees(tx, principal, menages.map((m) => m.organisationId));
+      return menages.filter((m) => !fermees.has(m.organisationId));
     });
   }
 

@@ -14,6 +14,7 @@ import type { PrincipalAssociation } from '../auth/principal';
 import { exigerSurOrganisation } from '../autorisation/acces';
 import { AutorisationService } from '../autorisation/autorisation.service';
 import { CONFIGURATION, type Configuration } from '../config/configuration';
+import { ConfidentialiteService } from '../confidentialite/confidentialite.service';
 import { PrismaService, type Tx } from '../prisma/prisma.service';
 import { Antivirus } from './antivirus';
 import { Stockage } from './stockage';
@@ -76,6 +77,7 @@ export class DocumentsService {
     private readonly antivirus: Antivirus,
     private readonly stockage: Stockage,
     @Inject(CONFIGURATION) private readonly config: Configuration,
+    private readonly confidentialite: ConfidentialiteService,
   ) {}
 
   /**
@@ -204,6 +206,9 @@ export class DocumentsService {
       permission === 'document:lire' ? lecture : (ECRITURE_ENTITE[entite.entiteType] ?? permission);
     await exigerSurOrganisation(tx, this.autorisation, principal, lecture, organisationId, lecture, 'Élément');
     await exigerSurOrganisation(tx, this.autorisation, principal, effective, organisationId, lecture, 'Élément');
+    if (entite.entiteType === 'menage' || entite.entiteType === 'personne') {
+      await this.confidentialite.exiger(tx, principal, organisationId);
+    }
     return organisationId;
   }
 }

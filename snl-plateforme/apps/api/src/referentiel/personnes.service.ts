@@ -1,9 +1,10 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import type { Permission } from '@snl/shared';
 import type { PrincipalAssociation } from '../auth/principal';
 import { exigerSurOrganisation } from '../autorisation/acces';
 import { AutorisationService } from '../autorisation/autorisation.service';
 import { ChiffrementService } from '../commun/chiffrement.service';
+import { ConfidentialiteService, CODE_ENGAGEMENT_REQUIS } from '../confidentialite/confidentialite.service';
 import { estDoublonProbable, normaliserNom, normaliserTelephone } from '../commun/normalisation';
 import { idsOrganisationsDuPerimetre } from '../organisations/organisations.service';
 import { PrismaService, type Tx } from '../prisma/prisma.service';
@@ -41,6 +42,7 @@ export class PersonnesService {
     private readonly prisma: PrismaService,
     private readonly autorisation: AutorisationService,
     private readonly chiffrement: ChiffrementService,
+    private readonly confidentialite: ConfidentialiteService,
   ) {}
 
   // --- Ménages -------------------------------------------------------------
@@ -49,6 +51,13 @@ export class PersonnesService {
     return this.prisma.dansAssociation(principal.tenantId, async (tx) => {
       let ids = await idsOrganisationsDuPerimetre(tx, this.autorisation.perimetre(principal, 'menage:lire'));
       if (organisationId) ids = ids.filter((id) => id === organisationId);
+      // M3-R01 : sans engagement de confidentialité signé, on invite à le signer.
+      if ((await this.confidentialite.organisationsFermees(tx, principal, ids)).size > 0) {
+        throw new ForbiddenException({
+          message: 'Signez l’engagement de confidentialité pour accéder aux informations des ménages.',
+          code: CODE_ENGAGEMENT_REQUIS,
+        });
+      }
       return tx.menage.findMany({
         where: { organisationId: { in: ids }, supprimeLe: null },
         orderBy: { libelle: 'asc' },
@@ -204,7 +213,8 @@ export class PersonnesService {
     return personne;
   }
 
-  private exiger(
+  /** Permission et périmètre, puis engagement de confidentialité (M3-R01). */
+  private async exiger(
     tx: Tx,
     principal: PrincipalAssociation,
     permission: Permission,
@@ -212,7 +222,9 @@ export class PersonnesService {
     lecture: Permission = 'personne:lire',
     libelle = 'Personne',
   ) {
-    return exigerSurOrganisation(tx, this.autorisation, principal, permission, organisationId, lecture, libelle);
+    const chemin = await exigerSurOrganisation(tx, this.autorisation, principal, permission, organisationId, lecture, libelle);
+    await this.confidentialite.exiger(tx, principal, organisationId);
+    return chemin;
   }
 
   private async verifierMenage(tx: Tx, menageId: string | null | undefined, organisationId: string) {

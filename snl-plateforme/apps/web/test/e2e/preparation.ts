@@ -9,7 +9,8 @@ export default async function preparer(): Promise<void> {
   const prisma = new PrismaClient({ datasources: { db: { url: process.env.DATABASE_URL_PROPRIETAIRE } } });
   try {
     await prisma.$executeRawUnsafe(`
-      TRUNCATE inscription, activite, referent, disponibilite, profil_benevole,
+      TRUNCATE point_etape, parrainage, engagement_signe, progression_accueil, contenu_accueil,
+               inscription, activite, referent, disponibilite, profil_benevole,
                evenement_intervention, ligne_cout, intervention, entretien_periodique, artisan,
                evenement_audit, document, donnees_sensibles, personne, menage, logement,
                immeuble, activation_module, adhesion, utilisateur, organisation RESTART IDENTITY CASCADE`);
@@ -32,11 +33,21 @@ export default async function preparer(): Promise<void> {
       data: { ...t, id: evry, parentId: antenne, type: 'GROUPE_LOCAL', nom: 'Groupe d’Évry', slug: 'evry', chemin: `/${asso}/${antenne}/${evry}/` },
     });
 
+    // Groupe de Juvisy : seul le module M3 y est activé, pour tester l'accueil sans gêner les autres parcours.
+    const juvisy = randomUUID();
+    await prisma.organisation.create({
+      data: { ...t, id: juvisy, parentId: antenne, type: 'GROUPE_LOCAL', nom: 'Groupe de Juvisy', slug: 'juvisy', chemin: `/${asso}/${antenne}/${juvisy}/` },
+    });
+    await prisma.activationModule.create({ data: { ...t, organisationId: juvisy, codeModule: 'M3', active: true } });
+    await prisma.menage.create({ data: { ...t, organisationId: juvisy, libelle: 'Famille Juvisy (démo)' } });
+
     const membres: [string, string, string, 'ADMINISTRATEUR' | 'COORDINATEUR' | 'TRAVAILLEUR_SOCIAL' | 'BENEVOLE'][] = [
       ['admin', 'Camille Admin', asso, 'ADMINISTRATEUR'],
       ['coordo', 'Dominique Coordo', evry, 'COORDINATEUR'],
       ['ts', 'Sacha Travailleur', antenne, 'TRAVAILLEUR_SOCIAL'],
       ['benevole', 'Alex Bénévole', massy, 'BENEVOLE'],
+      ['nouvelle', 'Nina Nouvelle', juvisy, 'BENEVOLE'],
+      ['marraine', 'Maud Marraine', juvisy, 'BENEVOLE'],
     ];
     for (const [sujet, nom, organisationId, role] of membres) {
       const u = await prisma.utilisateur.create({

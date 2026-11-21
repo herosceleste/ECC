@@ -23,7 +23,8 @@ export function clientProprietaire(): PrismaClient {
 
 export async function viderBase(prisma: PrismaClient): Promise<void> {
   await prisma.$executeRawUnsafe(`
-    TRUNCATE inscription, activite, referent, disponibilite, profil_benevole,
+    TRUNCATE point_etape, parrainage, engagement_signe, progression_accueil, contenu_accueil,
+             inscription, activite, referent, disponibilite, profil_benevole,
              evenement_intervention, ligne_cout, intervention, entretien_periodique, artisan,
              evenement_audit, document, donnees_sensibles, personne, menage, logement,
              immeuble, activation_module, adhesion, utilisateur, organisation RESTART IDENTITY CASCADE`);

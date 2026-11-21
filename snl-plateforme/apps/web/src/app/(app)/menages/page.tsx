@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { appelerApi } from '@/lib/api';
+import { EngagementRequis } from '@/composants/engagement-requis';
+import { CODE_ENGAGEMENT_REQUIS } from '@/lib/accueil';
+import { appelerApi, ErreurApi } from '@/lib/api';
 import { chargerMoi, nomsOrganisations } from '@/lib/contexte';
 import { peut } from '@/lib/droits';
 import type { Menage } from '@/lib/types';
@@ -8,11 +10,14 @@ import type { Menage } from '@/lib/types';
 export const metadata: Metadata = { title: 'Ménages' };
 
 export default async function Menages() {
-  const [menages, noms, moi] = await Promise.all([
-    appelerApi<Menage[]>('/menages'),
-    nomsOrganisations(),
-    chargerMoi(),
-  ]);
+  let menages: Menage[];
+  try {
+    menages = await appelerApi<Menage[]>('/menages');
+  } catch (erreur) {
+    if (erreur instanceof ErreurApi && erreur.code === CODE_ENGAGEMENT_REQUIS) return <EngagementRequis retour="/menages" />;
+    throw erreur;
+  }
+  const [noms, moi] = await Promise.all([nomsOrganisations(), chargerMoi()]);
 
   return (
     <>

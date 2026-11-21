@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { SectionDocuments } from '@/composants/documents';
 import { FormulairePersonne } from '@/composants/formulaire-personne';
+import { EngagementRequis } from '@/composants/engagement-requis';
+import { CODE_ENGAGEMENT_REQUIS } from '@/lib/accueil';
 import { appelerApi, ErreurApi } from '@/lib/api';
 import { chargerMoi, cheminsOrganisations, nomsOrganisations } from '@/lib/contexte';
 import { peut } from '@/lib/droits';
@@ -26,6 +28,7 @@ export default async function FicheMenage({
   try {
     menage = await appelerApi<Menage>(`/menages/${encodeURIComponent(id)}`);
   } catch (erreur) {
+    if (erreur instanceof ErreurApi && erreur.code === CODE_ENGAGEMENT_REQUIS) return <EngagementRequis retour={`/menages/${id}`} />;
     if (erreur instanceof ErreurApi && [400, 404].includes(erreur.statut)) notFound();
     throw erreur;
   }

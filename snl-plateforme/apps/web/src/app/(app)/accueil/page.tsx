@@ -1,13 +1,27 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { appelerApi } from '@/lib/api';
+import type { MonParcours } from '@/lib/types';
 import { chargerMoi, nomsOrganisations } from '@/lib/contexte';
 import { LIBELLES_ROLES, peut } from '@/lib/droits';
 
 export const metadata: Metadata = { title: 'Accueil' };
 
-export default async function Accueil() {
-  const [moi, noms] = await Promise.all([chargerMoi(), nomsOrganisations()]);
+export default async function Accueil({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  const [moi, noms, { ignorer }] = await Promise.all([chargerMoi(), nomsOrganisations(), searchParams]);
   const a = moi.adhesions;
+
+  // Critère M3-1 : un nouveau bénévole qui n'a encore rien commencé arrive sur son parcours.
+  const nouveauBenevole = a.some((x) => x.role === 'BENEVOLE') && !peut(a, 'accueil:editer');
+  if (nouveauBenevole && !ignorer) {
+    const parcours = await appelerApi<MonParcours>('/integration/mon-parcours').catch(() => null);
+    if (parcours?.actif && parcours.etapes.length > 0 && parcours.nombreTerminees === 0) redirect('/integration');
+  }
 
   const raccourcis = [
     peut(a, 'logement:lire') && {

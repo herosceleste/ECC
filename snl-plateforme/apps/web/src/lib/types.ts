@@ -256,3 +256,63 @@ export interface Referent {
   utilisateurId: string;
   nomAffiche: string;
 }
+
+// --- Module M3 Accueil des bénévoles ---------------------------------------------
+
+export type TypeContenuAccueil = 'ETAPE' | 'FICHE' | 'FAQ' | 'CONTACT' | 'ENGAGEMENT_CHARTE' | 'ENGAGEMENT_CONFIDENTIALITE';
+
+export interface ContenuAccueil {
+  id: string;
+  organisationId: string;
+  type: TypeContenuAccueil;
+  titre: string;
+  corps: string;
+  lienVideo: string | null;
+  ordre: number;
+  publie: boolean;
+  portee: string;
+  national: boolean;
+  modifiable: boolean;
+}
+
+export interface PointEtape {
+  id: string;
+  date: string;
+  faitLe: string | null;
+}
+
+export interface MonParcours {
+  actif: boolean;
+  etapes: (ContenuAccueil & { terminee: boolean })[];
+  nombreTerminees: number;
+  complet: boolean;
+  parrain: { nomAffiche: string; email: string; points: PointEtape[] } | null;
+  filleuls: {
+    parrainageId: string;
+    nomAffiche: string;
+    email: string | null;
+    etapesTerminees: number;
+    etapesTotal: number;
+    points: PointEtape[];
+  }[];
+  engagements: { type: string; titre: string; signe: boolean }[];
+}
+
+export interface TexteEngagement {
+  type: 'ENGAGEMENT_CHARTE' | 'ENGAGEMENT_CONFIDENTIALITE';
+  titre: string;
+  corps: string;
+  empreinte: string;
+  parDefaut: boolean;
+  signe: boolean;
+}
+
+export interface LigneSuivi {
+  utilisateurId: string;
+  nomAffiche: string;
+  organisation: { id: string; nom: string };
+  arriveeLe: string;
+  etapesTerminees: number;
+  etapesTotal: number;
+  parrainage: { id: string; parrainNom: string; points: PointEtape[] } | null;
+}

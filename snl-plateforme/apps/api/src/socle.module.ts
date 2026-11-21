@@ -8,6 +8,7 @@ import { FournisseurIdentite, FournisseurKeycloak } from './auth/fournisseur-ide
 import { VerificateurJeton, VerificateurJetonOidc } from './auth/verificateur-jeton';
 import { AutorisationService } from './autorisation/autorisation.service';
 import { ChiffrementService } from './commun/chiffrement.service';
+import { ConfidentialiteService } from './confidentialite/confidentialite.service';
 import { Antivirus, AntivirusClamav } from './documents/antivirus';
 import { DocumentsController } from './documents/documents.controller';
 import { DocumentsService } from './documents/documents.service';
@@ -49,6 +50,7 @@ import { UtilisateursService } from './utilisateurs/utilisateurs.service';
     AutorisationService,
     AuditService,
     ChiffrementService,
+    ConfidentialiteService,
     OrganisationsService,
     ModulesService,
     UtilisateursService,
@@ -63,6 +65,6 @@ import { UtilisateursService } from './utilisateurs/utilisateurs.service';
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
   ],
-  exports: [PrismaService, AutorisationService, AuditService, ModulesService, ChiffrementService, Notificateur],
+  exports: [PrismaService, AutorisationService, AuditService, ModulesService, ChiffrementService, ConfidentialiteService, Notificateur],
 })
 export class SocleModule {}

@@ -91,12 +91,35 @@ Quand une activité est complète, les suivants passent en liste d'attente ; à 
 
 Les rappels et alertes sont envoyés par l'API elle-même, toutes les 15 minutes (`TACHES_PLANIFIEES=false` pour les désactiver). Chaque envoi est réservé en base avant de partir : même avec plusieurs instances de l'API, un rappel n'est envoyé qu'une fois.
 
+## Module M3 Accueil des bénévoles
+
+Le troisième module guide chaque nouveau bénévole pendant ses premiers mois : un parcours d'étapes, des fiches pratiques, une foire aux questions, des contacts utiles et un parrain ou une marraine.
+
+| Exigence | Contenu | État |
+| --- | --- | --- |
+| M3-F01 | Parcours d'intégration en étapes, avec suivi de la progression | Fait |
+| M3-F02 | Contenus (textes, liens vidéo, fiches pratiques) modifiables sans technique | Fait |
+| M3-F03 | Contacts utiles du groupe et de l'antenne | Fait |
+| M3-F04 | Parrain ou marraine et points d'étape | Fait |
+| M3-F05 | Foire aux questions avec recherche plein texte en français | Fait |
+| M3-F06 | Charte et engagement de confidentialité signés en ligne | Fait |
+| M3-F07 | Ressenti du bénévole à 1 et 3 mois | À faire, avec M14 |
+| M3-R01 | Données des ménages accessibles après signature de l'engagement | Fait |
+| M3-R02 | Contenus nationaux complétés, jamais modifiés, par les antennes et groupes | Fait |
+
+Quelques précisions :
+
+- Quand M3 est activé pour un groupe, **toute personne** qui consulte les ménages de ce groupe doit avoir signé l'engagement de confidentialité, bénévoles comme coordinateurs. Si SNL préfère réserver cette règle aux bénévoles, le changement est simple.
+- Une signature porte sur un texte précis (son empreinte). Si l'association modifie le texte, chacun doit signer la nouvelle version ; les signatures ne peuvent être ni modifiées ni effacées.
+- Tant que l'association n'a pas rédigé ses propres textes, des versions courtes par défaut sont proposées : **elles doivent être relues par SNL** avant le pilote.
+- Un nouveau bénévole qui n'a encore commencé aucune étape arrive directement sur son parcours. Si celui-ci reste inachevé 30 jours après la désignation du parrain, ce dernier reçoit un courriel de relance, une seule fois.
+
 ## Organisation du code
 
 ```text
 snl-plateforme/
 ├── apps/web/                 interface Next.js (pages, actions serveur, session)
-├── apps/api/                 API NestJS : socle et modules métier (src/travaux, src/benevoles)
+├── apps/api/                 API NestJS : socle et modules métier (src/travaux, src/benevoles, src/accueil)
 │   ├── prisma/               schéma et migrations (dont la sécurité RLS)
 │   ├── src/
 │   │   ├── auth/             jeton OIDC, garde, invitation Keycloak

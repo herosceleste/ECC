@@ -23,6 +23,7 @@ const COMPTES = {
   'coordo-sans-mfa': { sujet: 'coordo', nom: 'Dominique Coordo', acr: undefined },
   ts: { nom: 'Sacha Travailleur', acr: 'mfa' },
   benevole: { nom: 'Alex Bénévole', acr: undefined },
+  nouvelle: { nom: 'Nina Nouvelle', acr: undefined },
 };
 
 const { privateKey, publicKey } = await generateKeyPair('RS256');
