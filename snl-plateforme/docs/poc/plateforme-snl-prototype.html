@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plateforme SNL, prototype</title>
+<meta name="description" content="Prototype interactif de la plateforme numérique imaginée pour Solidarités Nouvelles pour le Logement. Données entièrement fictives.">
+<style>
+  :root {
+    --fond: #f7f6f2; --surface: #ffffff; --surface-douce: #f0eee8; --texte: #1f2328; --texte-doux: #4f565e;
+    --bordure: #d6d3cb; --accent: #1d5c63; --accent-texte: #ffffff; --accent-doux: #e3eff0;
+    --succes: #1e6b3a; --succes-fond: #e4f2e8; --alerte: #8a4b00; --alerte-fond: #fdf1df;
+    --erreur: #a3271f; --erreur-fond: #fbe7e5; --focus: #b45309; --rayon: 8px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fond: #15181b; --surface: #1d2125; --surface-douce: #252a2f; --texte: #eceae4; --texte-doux: #b3b8bd;
+      --bordure: #3a4046; --accent: #6fbdc4; --accent-texte: #0f1a1c; --accent-doux: #1f3436;
+      --succes: #7fd19b; --succes-fond: #1b2e22; --alerte: #f3b664; --alerte-fond: #33281a;
+      --erreur: #f19a92; --erreur-fond: #3a1f1d; --focus: #f3b664; color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fond); color: var(--texte); font: 1rem/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  a { color: var(--accent); }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .masque { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .bandeau { background: var(--alerte-fond); color: var(--texte); text-align: center; padding: .45rem 1rem; font-size: .9rem; border-bottom: 1px solid var(--bordure); }
+  header { background: var(--surface); border-bottom: 1px solid var(--bordure); }
+  .haut { max-width: 70rem; margin: 0 auto; padding: .75rem 1rem; display: flex; flex-wrap: wrap; gap: .75rem 1.5rem; align-items: center; justify-content: space-between; }
+  .marque { font-weight: 700; font-size: 1.1rem; }
+  .marque small { display: block; font-weight: 400; font-size: .85rem; color: var(--texte-doux); }
+  .role { display: flex; gap: .5rem; align-items: center; font-size: .92rem; }
+  nav ul { max-width: 70rem; margin: 0 auto; padding: 0 .5rem; list-style: none; display: flex; gap: .25rem; overflow-x: auto; border-top: 1px solid var(--bordure); }
+  nav button { background: none; border: 0; border-bottom: 3px solid transparent; padding: .7rem .75rem; font: inherit; color: var(--texte); cursor: pointer; white-space: nowrap; }
+  nav button[aria-current="page"] { border-bottom-color: var(--accent); font-weight: 600; }
+  main { max-width: 70rem; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+  h1 { font-size: 1.7rem; margin: 0 0 .5rem; } h2 { font-size: 1.25rem; margin: 0 0 .6rem; } h3 { font-size: 1.05rem; margin: 0 0 .4rem; }
+  .chapo { color: var(--texte-doux); margin-top: 0; }
+  .grille { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
+  .deux { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+  @media (max-width: 52rem) { .deux { grid-template-columns: minmax(0, 1fr); } }
+  .carte { background: var(--surface); border: 1px solid var(--bordure); border-radius: var(--rayon); padding: 1.1rem 1.2rem; margin-bottom: 1rem; }
+  .carte > :last-child { margin-bottom: 0; }
+  .badge { display: inline-block; font-size: .8rem; font-weight: 600; padding: .1rem .55rem; border-radius: 999px; background: var(--surface-douce); border: 1px solid var(--bordure); }
+  .b-succes { background: var(--succes-fond); color: var(--succes); border-color: transparent; }
+  .b-alerte { background: var(--alerte-fond); color: var(--alerte); border-color: transparent; }
+  .b-erreur { background: var(--erreur-fond); color: var(--erreur); border-color: transparent; }
+  .alerte { border-left: 4px solid; border-radius: var(--rayon); padding: .8rem 1rem; margin-bottom: 1rem; }
+  .alerte p:last-child { margin-bottom: 0; }
+  .a-info { background: var(--accent-doux); border-color: var(--accent); }
+  .a-succes { background: var(--succes-fond); border-color: var(--succes); }
+  .a-erreur { background: var(--erreur-fond); border-color: var(--erreur); }
+  .a-attention { background: var(--alerte-fond); border-color: var(--alerte); }
+  .bouton { display: inline-flex; align-items: center; justify-content: center; font: inherit; font-weight: 600; min-height: 2.75rem; padding: .5rem 1.1rem; border-radius: 6px; border: 2px solid var(--accent); background: var(--accent); color: var(--accent-texte); cursor: pointer; text-decoration: none; }
+  .bouton.secondaire { background: transparent; color: var(--accent); }
+  .bouton.danger { background: transparent; color: var(--erreur); border-color: var(--erreur); }
+  .actions { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+  form { display: grid; gap: .9rem; }
+  label { font-weight: 600; }
+  .case { display: flex; gap: .6rem; align-items: center; font-weight: 400; }
+  input, select, textarea { font: inherit; color: var(--texte); background: var(--surface); border: 1px solid var(--texte-doux); border-radius: 6px; padding: .55rem .7rem; min-height: 2.75rem; width: 100%; }
+  input[type=checkbox] { width: 1.2rem; height: 1.2rem; min-height: 0; accent-color: var(--accent); }
+  .champ { display: grid; gap: .3rem; }
+  .aide { font-size: .88rem; color: var(--texte-doux); font-weight: 400; }
+  .fil { list-style: none; padding: 0 0 0 1rem; border-left: 2px solid var(--bordure); }
+  .fil li { position: relative; padding: 0 0 .8rem .5rem; }
+  .fil li::before { content: ""; position: absolute; left: -1.42rem; top: .45rem; width: .7rem; height: .7rem; border-radius: 50%; background: var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+  th, td { text-align: left; padding: .6rem .8rem; border-bottom: 1px solid var(--bordure); }
+  th { background: var(--surface-douce); }
+  .tableau { overflow-x: auto; background: var(--surface); border: 1px solid var(--bordure); border-radius: var(--rayon); margin-bottom: 1rem; }
+  progress { width: 100%; height: .9rem; }
+  footer { max-width: 70rem; margin: 0 auto; padding: 1rem; font-size: .85rem; color: var(--texte-doux); }
+</style>
+</head>
+<body>
+<div class="bandeau" role="note"><strong>Prototype de démonstration.</strong> Aucune donnée réelle : personnes, logements et ménages sont fictifs. Rien n’est envoyé ni enregistré.</div>
+<header>
+  <div class="haut">
+    <div class="marque">Plateforme SNL <small>Antenne de démonstration</small></div>
+    <div class="role">
+      <label for="role">Voir la plateforme en tant que</label>
+      <select id="role" style="width:auto">
+        <option value="benevole">Alex, bénévole (groupe Nord)</option>
+        <option value="coordo">Dominique, coordinatrice (groupe Nord)</option>
+        <option value="ts">Sacha, travailleur social (antenne)</option>
+      </select>
+    </div>
+  </div>
+  <nav aria-label="Navigation principale"><ul id="navigation"></ul></nav>
+</header>
+<main id="contenu" tabindex="-1"></main>
+<div id="annonce" class="masque" aria-live="polite"></div>
+<footer>Prototype réalisé pour présenter la plateforme. La version complète (API, interface, tests) applique les mêmes règles côté serveur, avec un cloisonnement des données par association et un journal d’audit.</footer>
+
+<script>
+'use strict';
+
+/* --- Données fictives ---------------------------------------------------------------- */
+const ROLES = {
+  benevole: { nom: 'Alex', libelle: 'Bénévole', gerer: false, sensible: false, nouveau: true },
+  coordo: { nom: 'Dominique', libelle: 'Coordinatrice', gerer: true, sensible: false, nouveau: false },
+  ts: { nom: 'Sacha', libelle: 'Travailleur social', gerer: false, sensible: true, nouveau: false },
+};
+const CATEGORIES = { PLOMBERIE: 'Plomberie, fuite d’eau', GAZ: 'Gaz', ELECTRICITE: 'Électricité', CHAUFFAGE: 'Chauffage, eau chaude', SERRURERIE: 'Serrure, clés', HUMIDITE: 'Humidité, moisissures' };
+const STATUTS = { NOUVEAU: ['Nouveau', 'b-alerte'], QUALIFIE: ['Qualifié', ''], PLANIFIE: ['Planifié', ''], EN_COURS: ['En cours', 'b-alerte'], RESOLU: ['Résolu', 'b-succes'], CLOS: ['Clos', 'b-succes'] };
+const SUIVANT = { QUALIFIE: ['EN_COURS', 'Démarrer'], PLANIFIE: ['EN_COURS', 'Démarrer'], EN_COURS: ['RESOLU', 'Marquer comme résolu'], RESOLU: ['CLOS', 'Clore'] };
+const NUMEROS = [['Urgence sécurité gaz (GRDF), 24 h sur 24', '0 800 47 33 33', '0800473333'], ['Pompiers', '18', '18'], ['Numéro d’urgence européen', '112', '112']];
+const LOGEMENTS = ['DEMO-N1, 1 rue de l’Exemple', 'DEMO-N2, 1 rue de l’Exemple', 'DEMO-S1, 8 place Fictive'];
+const PERSONNES = [{ nom: 'Camille', roles: ['benevole', 'coordo'] }, { nom: 'Alex', benevole: true }, { nom: 'Dominique', benevole: false }, { nom: 'Artisan : Plomberie de démonstration', artisan: true }];
+
+const etat = {
+  role: 'benevole',
+  vue: 'accueil',
+  engagementSigne: { benevole: false, coordo: false, ts: false },
+  etapes: [
+    { titre: 'Découvrir SNL', texte: 'L’histoire de l’association, ses valeurs et la façon dont fonctionne un groupe local.', fait: false },
+    { titre: 'Signer la charte et l’engagement de confidentialité', texte: 'Ils protègent les personnes que nous accompagnons.', fait: false },
+    { titre: 'Participer à une première visite', texte: 'Avec un bénévole expérimenté du groupe.', fait: false },
+  ],
+  interventions: [
+    { id: 1, logement: LOGEMENTS[1], categorie: 'HUMIDITE', description: 'Traces de moisissure au plafond de la salle de bains.', statut: 'QUALIFIE', priorite: 'Normale', affecte: null, fil: ['Camille a signalé le problème.', 'Dominique a qualifié le signalement : priorité normale, dépannage.'] },
+  ],
+  activite: { titre: 'Chantier peinture, salon DEMO-N2', quand: 'Samedi prochain, 9 h 30 – 12 h 00', places: 2, inscrits: ['Camille'], attente: [] },
+  message: null,
+};
+
+/* --- Outils ---------------------------------------------------------------------------- */
+const $ = (sel) => document.querySelector(sel);
+const echapper = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+function annoncer(texte, type = 'a-succes') { etat.message = { texte, type }; $('#annonce').textContent = texte; }
+function moi() { return ROLES[etat.role]; }
+function aller(vue) { etat.vue = vue; afficher(); $('#contenu').focus(); }
+function message() {
+  if (!etat.message) return '';
+  const m = etat.message; etat.message = null;
+  return `<div class="alerte ${m.type}" role="status"><p>${echapper(m.texte)}</p></div>`;
+}
+function badgeStatut(s) { const [l, c] = STATUTS[s]; return `<span class="badge ${c}">${l}</span>`; }
+
+/* --- Navigation ------------------------------------------------------------------------ */
+function menus() {
+  const m = [['accueil', 'Accueil'], ['travaux', 'Travaux'], ['benevoles', 'Bénévoles'], ['menages', 'Ménages']];
+  if (moi().nouveau || etat.role === 'benevole') m.push(['integration', 'Intégration']);
+  return m;
+}
+function afficherNavigation() {
+  $('#navigation').innerHTML = menus().map(([v, l]) =>
+    `<li><button type="button" data-vue="${v}" ${etat.vue === v ? 'aria-current="page"' : ''}>${l}</button></li>`).join('');
+}
+
+/* --- Écrans ---------------------------------------------------------------------------- */
+const ECRANS = {
+  accueil() {
+    const r = moi();
+    const faites = etat.etapes.filter((e) => e.fait).length;
+    return `<h1>Bonjour ${r.nom}</h1><p class="chapo">${r.libelle} · groupe Nord (démonstration)</p>
+      ${etat.role === 'benevole' && faites < etat.etapes.length ? `<div class="alerte a-info"><p>Bienvenue dans l’équipe ! Votre parcours d’accueil vous attend (${faites} étape(s) sur ${etat.etapes.length}). <button class="bouton secondaire" data-vue="integration">Voir mon parcours</button></p></div>` : ''}
+      <div class="grille">
+        <div class="carte"><h2>Travaux</h2><p class="aide">Signaler un problème dans un logement et suivre sa résolution.</p><button class="bouton secondaire" data-vue="travaux">Ouvrir</button></div>
+        <div class="carte"><h2>Bénévoles</h2><p class="aide">Planning du groupe, inscriptions et liste d’attente.</p><button class="bouton secondaire" data-vue="benevoles">Ouvrir</button></div>
+        <div class="carte"><h2>Ménages</h2><p class="aide">Ménages accompagnés, accessibles après l’engagement de confidentialité.</p><button class="bouton secondaire" data-vue="menages">Ouvrir</button></div>
+      </div>
+      <div class="carte"><h2>Ce que montre ce prototype</h2><ul>
+        <li>Changez de rôle en haut de page : les actions proposées changent.</li>
+        <li>Signalez une odeur de gaz : l’alerte part aussitôt et les numéros d’urgence s’affichent.</li>
+        <li>En coordinatrice, essayez de confier le gaz à un bénévole : c’est impossible, par sécurité.</li>
+        <li>Inscrivez-vous au chantier, puis désistez-vous : la liste d’attente avance d’elle-même.</li>
+        <li>Ouvrez les ménages sans avoir signé l’engagement de confidentialité.</li>
+      </ul></div>`;
+  },
+
+  integration() {
+    const faites = etat.etapes.filter((e) => e.fait).length;
+    const signe = etat.engagementSigne[etat.role];
+    return `<h1>Bienvenue dans l’équipe</h1>${message()}
+      <div class="deux"><div>
+        ${signe ? '' : '<div class="alerte a-attention"><p>À faire en premier : lire et signer l’engagement de confidentialité.</p></div>'}
+        <h2>Mon parcours</h2>
+        <label for="progression" class="aide">${faites} étape(s) sur ${etat.etapes.length}</label>
+        <progress id="progression" max="${etat.etapes.length}" value="${faites}">${faites} sur ${etat.etapes.length}</progress>
+        ${etat.etapes.map((e, i) => `<div class="carte" style="margin-top:1rem"><h3>${i + 1}. ${echapper(e.titre)} ${e.fait ? '<span class="badge b-succes">Terminée</span>' : ''}</h3><p>${echapper(e.texte)}</p>
+          <button class="bouton ${e.fait ? 'secondaire' : ''}" data-etape="${i}">${e.fait ? 'Remettre à faire' : 'J’ai terminé cette étape'}</button></div>`).join('')}
+      </div><div>
+        <div class="carte"><h2>Ma marraine</h2><p><strong>Maud</strong> vous accompagne pendant vos premiers mois. Premier point d’étape : jeudi prochain.</p></div>
+        ${ECRANS.engagement()}
+      </div></div>`;
+  },
+
+  engagement() {
+    if (etat.engagementSigne[etat.role]) return '<div class="carte"><h2>Engagement de confidentialité</h2><p><span class="badge b-succes">Signé</span></p></div>';
+    return `<div class="carte" id="carte-engagement"><h2>Engagement de confidentialité</h2>
+      <p>En accompagnant des ménages, j’ai accès à des informations sur leur vie privée. Je m’engage à ne consulter que ce qui est nécessaire à ma mission, à ne jamais rien communiquer hors de l’association et à ne rien copier hors de la plateforme.</p>
+      <form data-form="signer"><label class="case"><input type="checkbox" name="accepte"> J’ai lu ce texte et je m’engage à le respecter</label>
+      <div class="actions"><button class="bouton">Signer</button></div></form></div>`;
+  },
+
+  menages() {
+    if (!etat.engagementSigne[etat.role]) {
+      return `<h1>Ménages</h1><div class="carte" role="alert"><h2>Engagement de confidentialité</h2>
+        <p>Les informations des ménages sont confidentielles. Avant de les consulter, lisez et signez l’engagement de confidentialité : cela prend deux minutes.</p></div>${ECRANS.engagement()}`;
+    }
+    const r = moi();
+    return `<h1>Ménages</h1>${message()}<div class="deux"><div class="carte"><h2>Famille Exemple (démo)</h2>
+        <table><thead><tr><th scope="col">Personne</th><th scope="col">Téléphone</th></tr></thead>
+        <tbody><tr><td>Camille Exemple</td><td>06 00 00 00 01</td></tr><tr><td>Noé Exemple</td><td>—</td></tr></tbody></table></div>
+      <div class="carte"><h2>Situation sociale et ressources</h2>
+        ${r.sensible ? '<p class="aide">Informations chiffrées, réservées aux travailleurs sociaux. Chaque consultation est enregistrée dans le journal.</p><p>Ressources mensuelles : 845 € · RSA</p>' : '<p class="aide">Réservé aux travailleurs sociaux. Un bénévole référent voit le nom et les coordonnées du ménage, jamais sa situation sociale.</p>'}
+      </div></div>`;
+  },
+
+  travaux() {
+    const r = moi();
+    return `<div class="actions" style="justify-content:space-between"><h1>Travaux et entretien</h1><button class="bouton" data-vue="signaler">Signaler un problème</button></div>${message()}
+      <div class="tableau"><table><caption class="masque">Signalements en cours</caption><thead><tr><th scope="col">Problème</th><th scope="col">Logement</th><th scope="col">Priorité</th><th scope="col">Statut</th><th scope="col">Confié à</th></tr></thead><tbody>
+      ${etat.interventions.map((i) => `<tr><td><button class="bouton secondaire" data-intervention="${i.id}">${CATEGORIES[i.categorie]}</button></td><td>${echapper(i.logement)}</td><td>${i.priorite === 'Urgente' ? '<span class="badge b-erreur">Urgente</span>' : i.priorite}</td><td>${badgeStatut(i.statut)}</td><td>${i.affecte ?? '—'}</td></tr>`).join('')}
+      </tbody></table></div>
+      <p class="aide">${r.gerer ? 'En tant que coordinatrice, vous qualifiez, confiez et clôturez les signalements.' : 'Vous signalez et suivez ; la qualification et la clôture reviennent à la coordination.'}</p>`;
+  },
+
+  signaler() {
+    return `<h1>Signaler un problème</h1><div class="deux"><form class="carte" data-form="signaler">
+        <div class="champ"><label for="logement">Logement</label><select id="logement" name="logement">${LOGEMENTS.map((l) => `<option>${echapper(l)}</option>`).join('')}</select></div>
+        <div class="champ"><label for="categorie">Type de problème</label><select id="categorie" name="categorie">${Object.entries(CATEGORIES).map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></div>
+        <div class="champ"><label for="description">Description</label><textarea id="description" name="description" rows="3" required minlength="10" aria-describedby="aide-desc"></textarea><span id="aide-desc" class="aide">Ce qui se passe, depuis quand, où dans le logement. 10 caractères au moins.</span></div>
+        <label class="case"><input type="checkbox" name="urgent"> C’est urgent : fuite importante, absence de chauffage en hiver, risque pour la sécurité</label>
+        <div class="actions"><button class="bouton">Envoyer le signalement</button><button type="button" class="bouton secondaire" data-vue="travaux">Annuler</button></div>
+      </form><aside class="carte"><h2>En cas de danger immédiat</h2><p>Appelez d’abord les secours, puis faites le signalement.</p>
+        <ul>${NUMEROS.map(([l, n, t]) => `<li>${l} : <a href="tel:${t}">${n}</a></li>`).join('')}</ul><p class="aide">Une odeur de gaz est toujours traitée comme une urgence.</p></aside></div>`;
+  },
+
+  intervention() {
+    const i = etat.interventions.find((x) => x.id === etat.interventionId);
+    const r = moi();
+    const urgent = i.priorite === 'Urgente' && !['RESOLU', 'CLOS'].includes(i.statut);
+    const suivant = SUIVANT[i.statut];
+    const peutAvancer = suivant && (r.gerer || (i.affecte === r.nom && suivant[0] !== 'CLOS'));
+    const choix = PERSONNES.filter((p) => !(p.benevole && ['GAZ', 'ELECTRICITE'].includes(i.categorie)));
+    return `<p><button class="bouton secondaire" data-vue="travaux">← Retour aux travaux</button></p>
+      <div class="actions" style="justify-content:space-between"><h1>${CATEGORIES[i.categorie]}</h1><span>${badgeStatut(i.statut)}</span></div>${message()}
+      ${urgent ? `<div class="alerte a-erreur" role="alert"><p><strong>Signalement urgent.</strong> Les coordinateurs et gestionnaires ont été alertés. En cas de danger immédiat :</p><ul>${NUMEROS.map(([l, n, t]) => `<li>${l} : <a href="tel:${t}">${n}</a></li>`).join('')}</ul></div>` : ''}
+      <div class="deux"><div>
+        <div class="carte"><h2>Le problème</h2><p>${echapper(i.description)}</p><p class="aide">${echapper(i.logement)} · priorité ${i.priorite.toLowerCase()} · confié à ${i.affecte ?? 'personne pour le moment'}</p>
+          ${peutAvancer ? `<button class="bouton" data-avancer="${i.id}">${suivant[1]}</button>` : ''}
+          ${!r.gerer && suivant && suivant[0] === 'CLOS' ? '<p class="aide">La clôture revient à la coordination.</p>' : ''}</div>
+        <div class="carte"><h2>Suivi</h2><ol class="fil">${i.fil.map((f) => `<li>${echapper(f)}</li>`).join('')}</ol></div>
+      </div><div>
+        ${r.gerer && !['RESOLU', 'CLOS'].includes(i.statut) ? `<form class="carte" data-form="affecter"><h2>Confier l’intervention</h2>
+          <div class="champ"><label for="cible">Personne ou artisan</label><select id="cible" name="cible">${choix.map((p) => `<option>${echapper(p.nom)}</option>`).join('')}</select>
+          ${['GAZ', 'ELECTRICITE'].includes(i.categorie) ? '<span class="aide">Par sécurité, les bénévoles ne sont pas proposés pour le gaz et l’électricité.</span>' : ''}</div>
+          <button class="bouton secondaire">Confier</button></form>` : ''}
+      </div></div>`;
+  },
+
+  benevoles() {
+    const a = etat.activite;
+    const nom = moi().nom;
+    const inscrit = a.inscrits.includes(nom);
+    const enAttente = a.attente.includes(nom);
+    const complet = a.inscrits.length >= a.places;
+    return `<h1>Bénévoles</h1>${message()}<p class="chapo">Planning du groupe pour les prochaines semaines.</p>
+      <article class="carte" aria-labelledby="activite"><div class="actions" style="justify-content:space-between"><h2 id="activite">${echapper(a.titre)}</h2>
+        <span><span class="badge">Chantier</span> ${inscrit ? '<span class="badge b-succes">Inscrit</span>' : ''}${enAttente ? '<span class="badge b-alerte">En liste d’attente</span>' : ''}</span></div>
+        <p class="aide">${a.quand} · ${a.inscrits.length}/${a.places} inscrits${a.attente.length ? ` · ${a.attente.length} en attente` : ''}</p>
+        <p>Participants : ${a.inscrits.map(echapper).join(', ') || 'personne pour le moment'}${a.attente.length ? ` · Liste d’attente : ${a.attente.map(echapper).join(', ')}` : ''}</p>
+        ${inscrit || enAttente ? '<button class="bouton danger" data-activite="desister">Me désister</button>' : `<button class="bouton" data-activite="inscrire">${complet ? 'Rejoindre la liste d’attente' : 'Je m’inscris'}</button>`}
+      </article>
+      <div class="carte"><h2>Pour essayer</h2><p class="aide">Inscrivez Alex, puis passez en Dominique et inscrivez-la : le chantier est complet, elle passe en liste d’attente. Revenez en Alex et désistez-vous : Dominique récupère la place et la coordination est prévenue.</p></div>`;
+  },
+};
+
+/* --- Rendu et événements ---------------------------------------------------------------- */
+function afficher() {
+  afficherNavigation();
+  $('#contenu').innerHTML = ECRANS[etat.vue]();
+  document.title = `${$('#contenu h1')?.textContent ?? 'Plateforme SNL'} · Plateforme SNL, prototype`;
+}
+
+document.addEventListener('click', (e) => {
+  const cible = e.target.closest('button');
+  if (!cible) return;
+  if (cible.dataset.vue) return aller(cible.dataset.vue);
+  if (cible.dataset.etape) {
+    const etape = etat.etapes[Number(cible.dataset.etape)];
+    etape.fait = !etape.fait;
+    annoncer(etape.fait ? 'Bravo, étape terminée.' : 'Étape remise à faire.');
+    return afficher();
+  }
+  if (cible.dataset.intervention) { etat.interventionId = Number(cible.dataset.intervention); return aller('intervention'); }
+  if (cible.dataset.avancer) {
+    const i = etat.interventions.find((x) => x.id === Number(cible.dataset.avancer));
+    const [vers] = SUIVANT[i.statut];
+    i.fil.push(`${moi().nom} : ${STATUTS[i.statut][0].toLowerCase()} → ${STATUTS[vers][0].toLowerCase()}.`);
+    i.statut = vers;
+    annoncer(`Le statut est mis à jour : ${STATUTS[vers][0].toLowerCase()}.${vers === 'CLOS' ? '' : ' La personne qui a signalé est prévenue.'}`);
+    return afficher();
+  }
+  if (cible.dataset.activite) {
+    const a = etat.activite; const nom = moi().nom;
+    if (cible.dataset.activite === 'inscrire') {
+      if (a.inscrits.length < a.places) { a.inscrits.push(nom); annoncer('C’est noté. Vous recevrez un rappel la veille.'); }
+      else { a.attente.push(nom); annoncer('Le chantier est complet : vous êtes en liste d’attente.', 'a-attention'); }
+    } else {
+      const etaitInscrit = a.inscrits.includes(nom);
+      a.inscrits = a.inscrits.filter((n) => n !== nom); a.attente = a.attente.filter((n) => n !== nom);
+      let promu = '';
+      if (etaitInscrit && a.attente.length) { promu = a.attente.shift(); a.inscrits.push(promu); }
+      annoncer(`Votre désistement est enregistré ; la coordination est prévenue.${promu ? ` ${promu} récupère la place et en est informé(e).` : ''}`);
+    }
+    return afficher();
+  }
+});
+
+document.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const form = e.target; const donnees = new FormData(form);
+  if (form.dataset.form === 'signer') {
+    if (!donnees.get('accepte')) { annoncer('Cochez la case pour confirmer que vous avez lu le texte et l’acceptez.', 'a-erreur'); return afficher(); }
+    etat.engagementSigne[etat.role] = true;
+    etat.etapes[1].fait = etat.role === 'benevole' ? true : etat.etapes[1].fait;
+    annoncer('Merci, votre signature est enregistrée. Les informations des ménages sont maintenant accessibles.');
+    return afficher();
+  }
+  if (form.dataset.form === 'signaler') {
+    const description = String(donnees.get('description') ?? '').trim();
+    if (description.length < 10) { form.description.setAttribute('aria-invalid', 'true'); form.description.focus(); $('#annonce').textContent = 'Décrivez le problème en quelques mots, 10 caractères au moins.'; return; }
+    const categorie = donnees.get('categorie');
+    const urgent = categorie === 'GAZ' || donnees.get('urgent');
+    const i = { id: Date.now(), logement: donnees.get('logement'), categorie, description, statut: 'NOUVEAU', priorite: urgent ? 'Urgente' : 'À qualifier', affecte: null,
+      fil: [`${moi().nom} a signalé le problème.`, ...(urgent ? ['Alerte urgente envoyée à 2 coordinateurs ou gestionnaires, sans attendre la qualification.'] : [])] };
+    etat.interventions.unshift(i); etat.interventionId = i.id;
+    annoncer('Le signalement est enregistré. Vous serez informé de chaque étape de son traitement.');
+    return aller('intervention');
+  }
+  if (form.dataset.form === 'affecter') {
+    const i = etat.interventions.find((x) => x.id === etat.interventionId);
+    i.affecte = donnees.get('cible');
+    if (['NOUVEAU', 'QUALIFIE'].includes(i.statut)) i.statut = 'PLANIFIE';
+    if (i.priorite === 'À qualifier') i.priorite = 'Normale';
+    i.fil.push(`${moi().nom} a confié l’intervention à ${i.affecte}.`);
+    annoncer('L’intervention est confiée ; la personne est prévenue par courriel.');
+    return afficher();
+  }
+});
+
+$('#role').addEventListener('change', (e) => { etat.role = e.target.value; etat.vue = 'accueil'; annoncer(`Vous voyez maintenant la plateforme en tant que ${ROLES[etat.role].nom}.`, 'a-info'); afficher(); });
+afficher();
+</script>
+</body>
+</html>
