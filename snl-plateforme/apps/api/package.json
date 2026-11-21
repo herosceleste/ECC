@@ -13,7 +13,8 @@
     "prisma:generate": "prisma generate",
     "migrate:deploy": "prisma migrate deploy",
     "association:creer": "node dist/scripts/creer-association.js",
-    "purger": "node dist/scripts/purger.js"
+    "purger": "node dist/scripts/purger.js",
+    "demo:charger": "node dist/scripts/donnees-demo.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1173.0",

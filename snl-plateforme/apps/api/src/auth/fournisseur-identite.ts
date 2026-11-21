@@ -46,7 +46,9 @@ export class FournisseurKeycloak extends FournisseurIdentite {
       body: JSON.stringify({
         username: invitation.email,
         email: invitation.email,
-        firstName: invitation.nomAffiche,
+        // Keycloak exige prénom et nom séparés ; sans eux, l'invité devrait
+        // remplir un formulaire de profil supplémentaire à sa première connexion.
+        ...separerNom(invitation.nomAffiche),
         enabled: true,
         emailVerified: false,
       }),
@@ -97,4 +99,10 @@ export class FournisseurKeycloak extends FournisseurIdentite {
     const corps = (await reponse.json()) as { access_token: string };
     return corps.access_token;
   }
+}
+
+/** « Camille Martin-Durand » → { firstName: « Camille », lastName: « Martin-Durand » }. */
+export function separerNom(nomAffiche: string): { firstName: string; lastName: string } {
+  const [prenom = '', ...reste] = nomAffiche.trim().split(/\s+/);
+  return { firstName: prenom, lastName: reste.join(' ') || prenom };
 }

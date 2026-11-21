@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
+import { ErreurApi } from '@/lib/api';
 import { chargerEspaces, chargerMoi } from '@/lib/contexte';
 import { LIBELLES_ROLES } from '@/lib/droits';
-import type { Espace } from '@/lib/types';
+import type { Espace, Moi } from '@/lib/types';
 import { choisirEspace } from './actions';
 
 export const metadata: Metadata = { title: 'Choisir mon espace' };
@@ -11,7 +12,32 @@ export default async function Espaces({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  const [moi, espaces, parametres] = await Promise.all([chargerMoi(), chargerEspaces(), searchParams]);
+  const parametres = await searchParams;
+  let moi: Moi;
+  let espaces: Espace[];
+  try {
+    [moi, espaces] = await Promise.all([chargerMoi(), chargerEspaces()]);
+  } catch (erreur) {
+    // Compte inconnu ou suspendu : on l'explique plutôt que d'afficher une erreur technique.
+    if (erreur instanceof ErreurApi && erreur.statut === 403) {
+      return (
+        <main id="contenu" className="page-centree">
+          <div className="carte">
+            <h1>Accès impossible</h1>
+            <div className="alerte alerte-attention" role="alert">
+              <p>{erreur.message}</p>
+            </div>
+            <form action="/auth/deconnexion" method="post">
+              <button type="submit" className="bouton">
+                Se déconnecter
+              </button>
+            </form>
+          </div>
+        </main>
+      );
+    }
+    throw erreur;
+  }
   const parAssociation = new Map<string, Espace[]>();
   for (const espace of espaces) {
     parAssociation.set(espace.tenant_id, [...(parAssociation.get(espace.tenant_id) ?? []), espace]);

@@ -31,6 +31,8 @@ const schema = z.object({
   URL_PUBLIQUE_WEB: z.string().url().default('http://localhost:3000'),
 
   S3_ENDPOINT: z.string().url(),
+  /** Adresse du stockage vue par le navigateur, pour signer les liens de téléchargement. */
+  S3_ENDPOINT_PUBLIC: z.string().url().optional(),
   S3_REGION: z.string().default('fr-par'),
   S3_BUCKET: z.string().min(1),
   S3_ACCESS_KEY: z.string().min(1),

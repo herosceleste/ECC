@@ -253,6 +253,17 @@ decrireAvecBase('API du socle', () => {
       expect(compte?.statut).toBe('ACTIF');
     });
 
+    it('rattache sans erreur un invité dont la première page envoie plusieurs requêtes à la fois', async () => {
+      await api('admin', a.association)
+        .post('/utilisateurs/invitations')
+        .send({ email: 'simultane@exemple.org', nomAffiche: 'Première Connexion', organisationId: a.groupe1, role: 'BENEVOLE' })
+        .expect(201);
+      const reponses = await Promise.all(
+        Array.from({ length: 6 }, () => api('simultane', a.association).get('/moi')),
+      );
+      expect(reponses.map((r) => r.status)).toEqual([200, 200, 200, 200, 200, 200]);
+    });
+
     it('impose le second facteur dès l’invitation d’un coordinateur', async () => {
       await api('admin', a.association)
         .post('/utilisateurs/invitations')

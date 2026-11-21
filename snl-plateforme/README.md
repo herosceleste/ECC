@@ -2,6 +2,8 @@
 
 Ce dossier contient le socle de la plateforme modulaire imaginée pour Solidarités Nouvelles pour le Logement : identité et droits, arborescence des organisations, référentiel des logements et des personnes, documents, activation des modules et journal d'audit, avec son interface web. Les modules métier (M1 à M14) viendront s'y brancher.
 
+Pour un premier essai dans un groupe local, voir le [guide du pilote](docs/guide-pilote.md).
+
 Il s'agit d'une initiative bénévole, pas encore validée par SNL. Les choix décrits ici suivent le document d'architecture et le cahier des charges rédigés en amont.
 
 ## État d'avancement
@@ -116,7 +118,6 @@ Les services démarrent sur les ports suivants, accessibles uniquement depuis la
 | Interface web | `http://localhost:3000` |
 | API | `http://localhost:3001` (sonde : `/sante`, routes : `/api/v1/…`) |
 | Keycloak | `http://localhost:8080` |
-| Console MinIO | `http://localhost:9001` |
 | Courriels de test (Mailpit) | `http://localhost:8025` |
 
 Une nouvelle association se crée en ligne de commande, avec la connexion du propriétaire de la base :
@@ -168,7 +169,7 @@ Ils parcourent les rôles de bénévole, coordinateur, travailleur social et adm
 
 - Les locataires ne peuvent pas encore signaler eux-mêmes un problème : le lien entre un locataire et son logement relève du bail (module M6). En attendant, bénévoles et salariés signalent pour eux.
 - L'alerte d'urgence est envoyée à tous les coordinateurs et gestionnaires concernés ; un véritable planning d'astreinte reste à construire avec SNL.
-- Le dépôt de documents n'est pas couvert par les tests de bout en bout (il exige MinIO et ClamAV) ; il l'est par les tests d'intégration de l'API.
+- Le dépôt de documents n'est pas couvert par les tests de bout en bout (il exige le stockage et l'antivirus) ; il est couvert par la recette d'installation (voir le guide du pilote) ; il l'est par les tests d'intégration de l'API.
 - Configurer dans Keycloak le flux d'authentification renforcée qui émet `acr=mfa` après un second facteur. En attendant, `EXIGER_SECOND_FACTEUR=false` en développement.
 - Prisma 6 signale des vulnérabilités dans ses dépendances de développement (outil de migration). Elles ne sont pas embarquées dans l'image d'exécution ; la migration vers Prisma 7 est à planifier.
 - Les fichiers déposés pour une personne purgée restent dans le stockage : leur suppression est à ajouter au script de purge.

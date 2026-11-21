@@ -2,7 +2,7 @@
 #   cp .env.example .env   (puis remplir les secrets)
 #   docker compose up -d --build
 #
-# Services : PostgreSQL, Keycloak, MinIO, ClamAV, Mailpit, l'API et l'interface web.
+# Services : PostgreSQL, Keycloak, Garage (stockage S3), ClamAV, Mailpit, l'API et l'interface web.
 # Les migrations s'exécutent automatiquement avant le démarrage de l'API.
 
 name: snl-plateforme
@@ -39,7 +39,8 @@ services:
       retries: 20
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.0.7
+    # Image officielle, publiée aussi sur Docker Hub (identique à quay.io).
+    image: keycloak/keycloak:26.0.7
     command: ["start-dev", "--import-realm"]
     environment:
       KC_DB: postgres
@@ -59,37 +60,38 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
 
-  minio:
-    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
-    command: ["server", "/data", "--console-address", ":9001"]
+  # Stockage des documents, compatible S3. MinIO ne distribue plus d'images
+  # communautaires ; Garage (association Deuxfleurs) le remplace.
+  garage:
+    image: dxflrs/garage:v1.0.1
     environment:
-      MINIO_ROOT_USER: ${S3_ACCESS_KEY:?à définir dans .env}
-      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:?à définir dans .env}
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET:?à définir dans .env}
+      GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN:?à définir dans .env}
     volumes:
-      - donnees-minio:/data
-    healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 5s
-      retries: 20
+      - ./infra/garage/garage.toml:/etc/garage.toml:ro
+      - donnees-garage:/var/lib/garage
     ports:
-      - "127.0.0.1:9000:9000"
-      - "127.0.0.1:9001:9001"
+      # Exposé pour que le navigateur suive les liens de téléchargement signés.
+      - "127.0.0.1:3900:3900"
 
-  minio-init:
-    image: minio/mc:RELEASE.2024-11-21T17-21-54Z
-    depends_on:
-      minio:
-        condition: service_healthy
-    entrypoint: >
-      sh -c "mc alias set local http://minio:9000 $${S3_ACCESS_KEY} $${S3_SECRET_KEY}
-      && mc mb --ignore-existing local/documents
-      && mc anonymous set none local/documents"
+  garage-init:
+    image: node:22-bookworm-slim
+    command: ["node", "/init/initialiser.mjs"]
     environment:
-      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
-      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      GARAGE_ADMIN_URL: http://garage:3903
+      GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:?à définir dans .env}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:?à définir dans .env}
+      S3_BUCKET: documents
+    volumes:
+      - ./infra/garage/initialiser.mjs:/init/initialiser.mjs:ro
+    depends_on:
+      - garage
 
   clamav:
-    image: clamav/clamav:1.4.1
+    image: clamav/clamav:1.4
+    volumes:
+      - donnees-clamav:/var/lib/clamav
     healthcheck:
       test: ["CMD", "clamdcheck.sh"]
       interval: 30s
@@ -125,7 +127,10 @@ services:
       OIDC_ISSUER: http://localhost:8080/realms/snl
       OIDC_JWKS_URL: http://keycloak:8080/realms/snl/protocol/openid-connect/certs
       KEYCLOAK_ADMIN_URL: http://keycloak:8080
-      S3_ENDPOINT: http://minio:9000
+      S3_ENDPOINT: http://garage:3900
+      # Adresse utilisée pour signer les liens de téléchargement remis au navigateur.
+      S3_ENDPOINT_PUBLIC: http://localhost:3900
+      S3_REGION: garage
       CLAMAV_HOTE: clamav
       # En développement, les courriels sont capturés par Mailpit (http://localhost:8025).
       SMTP_HOTE: mailpit
@@ -133,7 +138,7 @@ services:
     depends_on:
       migrations:
         condition: service_completed_successfully
-      minio-init:
+      garage-init:
         condition: service_completed_successfully
       clamav:
         condition: service_healthy
@@ -161,4 +166,5 @@ services:
 volumes:
   donnees-postgres:
   donnees-keycloak:
-  donnees-minio:
+  donnees-garage:
+  donnees-clamav:

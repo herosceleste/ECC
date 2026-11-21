@@ -8,12 +8,16 @@
  *     --nom "SNL Essonne" --slug snl-essonne \
  *     --admin-email admin@exemple.org --admin-nom "Camille Martin"
  *
- * L'administrateur reçoit le statut INVITE ; son compte Keycloak doit être créé
- * avec la même adresse (la première connexion rattache les deux).
+ * L'administrateur reçoit le statut INVITE. Si les variables KEYCLOAK_ADMIN_URL,
+ * KEYCLOAK_ADMIN_CLIENT_ID et KEYCLOAK_ADMIN_CLIENT_SECRET sont définies, son
+ * compte Keycloak est créé et il reçoit le courriel d'invitation ; sinon, il
+ * faut créer ce compte à la main avec la même adresse.
  */
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { parseArgs } from 'node:util';
+import { FournisseurKeycloak } from '../auth/fournisseur-identite';
+import type { Configuration } from '../config/configuration';
 
 async function principal(): Promise<void> {
   const { values } = parseArgs({
@@ -62,9 +66,27 @@ async function principal(): Promise<void> {
       `Association créée : ${resultat.association.nom} (${resultat.association.id})\n` +
         `Administrateur : ${resultat.utilisateur.email} (${resultat.utilisateur.statut})\n`,
     );
+    await inviterSiPossible(email, nomAdmin);
   } finally {
     await prisma.$disconnect();
   }
+}
+
+async function inviterSiPossible(email: string, nomAffiche: string): Promise<void> {
+  const env = process.env;
+  if (!env.KEYCLOAK_ADMIN_URL || !env.KEYCLOAK_ADMIN_CLIENT_ID || !env.KEYCLOAK_ADMIN_CLIENT_SECRET) {
+    process.stdout.write('Keycloak non configuré : créez le compte de l’administrateur à la main.\n');
+    return;
+  }
+  const config = {
+    KEYCLOAK_ADMIN_URL: env.KEYCLOAK_ADMIN_URL,
+    KEYCLOAK_REALM: env.KEYCLOAK_REALM ?? 'snl',
+    KEYCLOAK_ADMIN_CLIENT_ID: env.KEYCLOAK_ADMIN_CLIENT_ID,
+    KEYCLOAK_ADMIN_CLIENT_SECRET: env.KEYCLOAK_ADMIN_CLIENT_SECRET,
+    URL_PUBLIQUE_WEB: env.URL_PUBLIQUE_WEB ?? 'http://localhost:3000',
+  } as Configuration;
+  await new FournisseurKeycloak(config).inviter({ email, nomAffiche, exigerSecondFacteur: true });
+  process.stdout.write(`Courriel d’invitation envoyé à ${email}.\n`);
 }
 
 principal().catch((erreur: unknown) => {

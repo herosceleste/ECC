@@ -98,18 +98,19 @@ export class AuthGuard implements CanActivate {
 
     if (!utilisateur) {
       // Première connexion d'une personne invitée : on rattache son identité.
-      const invite = await this.prisma.utilisateur.findFirst({
+      // Le rattachement est atomique (une seule requête conditionnelle), car la
+      // première page envoie plusieurs appels simultanés : un seul rattache,
+      // les autres retrouvent ensuite le compte par son sujet.
+      await this.prisma.utilisateur.updateMany({
         where: { email: identite.email, sujetIdentite: null, statut: 'INVITE' },
+        data: { sujetIdentite: identite.sujet, statut: 'ACTIF', derniereConnexion: new Date() },
       });
-      if (!invite) {
+      utilisateur = await this.prisma.utilisateur.findUnique({ where: { sujetIdentite: identite.sujet } });
+      if (!utilisateur) {
         throw new ForbiddenException(
           'Aucun compte ne correspond à cette identité. Demandez une invitation à votre coordinateur.',
         );
       }
-      utilisateur = await this.prisma.utilisateur.update({
-        where: { id: invite.id },
-        data: { sujetIdentite: identite.sujet, statut: 'ACTIF', derniereConnexion: new Date() },
-      });
     }
 
     if (utilisateur.statut === 'SUSPENDU') {

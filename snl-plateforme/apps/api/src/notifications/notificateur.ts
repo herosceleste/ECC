@@ -44,12 +44,15 @@ export class NotificateurCourriel extends Notificateur {
       this.journal.warn(`SMTP non configuré : « ${message.sujet} » non envoyé (${message.destinataires.length} destinataire(s)).`);
       return;
     }
-    await this.transport.sendMail({
-      from: this.config.EXPEDITEUR_COURRIEL,
-      // Chaque destinataire en copie cachée : personne ne voit l'adresse des autres.
-      bcc: message.destinataires,
-      subject: message.sujet,
-      text: message.texte,
-    });
+    // Un courriel par destinataire : personne ne voit l'adresse des autres, et
+    // un message sans destinataire visible serait souvent classé indésirable.
+    for (const destinataire of message.destinataires) {
+      await this.transport.sendMail({
+        from: this.config.EXPEDITEUR_COURRIEL,
+        to: destinataire,
+        subject: message.sujet,
+        text: message.texte,
+      });
+    }
   }
 }

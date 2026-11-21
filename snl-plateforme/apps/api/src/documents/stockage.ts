@@ -9,19 +9,28 @@ export abstract class Stockage {
   abstract lienTemporaire(cle: string, nomFichier: string, dureeSecondes: number): Promise<string>;
 }
 
-/** Stockage objet compatible S3 (MinIO en local, prestataire européen en production). */
+/** Stockage objet compatible S3 (Garage en local, prestataire européen en production). */
 @Injectable()
 export class StockageS3 extends Stockage {
   private readonly client: S3Client;
+  /** Client dédié à la signature des liens : la signature dépend de l'adresse. */
+  private readonly clientPublic: S3Client;
 
   constructor(@Inject(CONFIGURATION) private readonly config: Configuration) {
     super();
-    this.client = new S3Client({
-      endpoint: config.S3_ENDPOINT,
-      region: config.S3_REGION,
-      forcePathStyle: config.S3_FORCE_PATH_STYLE,
-      credentials: { accessKeyId: config.S3_ACCESS_KEY, secretAccessKey: config.S3_SECRET_KEY },
-    });
+    const options = (endpoint: string) =>
+      new S3Client({
+        endpoint,
+        region: config.S3_REGION,
+        forcePathStyle: config.S3_FORCE_PATH_STYLE,
+        credentials: { accessKeyId: config.S3_ACCESS_KEY, secretAccessKey: config.S3_SECRET_KEY },
+        // Les stockages S3 tiers (Garage, Ceph…) n'acceptent pas tous les sommes de
+        // contrôle que le SDK ajoute d'office ; on n'envoie que celles qu'on fournit.
+        requestChecksumCalculation: 'WHEN_REQUIRED',
+        responseChecksumValidation: 'WHEN_REQUIRED',
+      });
+    this.client = options(config.S3_ENDPOINT);
+    this.clientPublic = options(config.S3_ENDPOINT_PUBLIC ?? config.S3_ENDPOINT);
   }
 
   async deposer(cle: string, contenu: Buffer, typeMime: string, empreinteSha256: string): Promise<void> {
@@ -39,7 +48,7 @@ export class StockageS3 extends Stockage {
   lienTemporaire(cle: string, nomFichier: string, dureeSecondes: number): Promise<string> {
     const nomSur = nomFichier.replace(/["\\\r\n]/g, '_');
     return getSignedUrl(
-      this.client,
+      this.clientPublic,
       new GetObjectCommand({
         Bucket: this.config.S3_BUCKET,
         Key: cle,

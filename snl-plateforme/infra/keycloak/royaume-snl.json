@@ -3,7 +3,9 @@
   "displayName": "Plateforme SNL",
   "enabled": true,
   "internationalizationEnabled": true,
-  "supportedLocales": ["fr"],
+  "supportedLocales": [
+    "fr"
+  ],
   "defaultLocale": "fr",
   "registrationAllowed": false,
   "resetPasswordAllowed": true,
@@ -33,11 +35,24 @@
     "from": "ne-pas-repondre@snl.localhost",
     "fromDisplayName": "Plateforme SNL (développement)"
   },
-  "clientScopes": [
+  "clients": [
     {
-      "name": "snl-api-audience",
-      "protocol": "openid-connect",
-      "attributes": { "include.in.token.scope": "false" },
+      "clientId": "snl-web",
+      "name": "Interface web SNL",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "redirectUris": [
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000/*"
+      },
       "protocolMappers": [
         {
           "name": "audience-snl-api",
@@ -50,23 +65,6 @@
           }
         }
       ]
-    }
-  ],
-  "clients": [
-    {
-      "clientId": "snl-web",
-      "name": "Interface web SNL",
-      "publicClient": true,
-      "standardFlowEnabled": true,
-      "directAccessGrantsEnabled": false,
-      "implicitFlowEnabled": false,
-      "redirectUris": ["http://localhost:3000/*"],
-      "webOrigins": ["http://localhost:3000"],
-      "attributes": {
-        "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:3000/*"
-      },
-      "defaultClientScopes": ["openid", "profile", "email", "acr", "snl-api-audience"]
     },
     {
       "clientId": "snl-api-admin",
@@ -84,7 +82,10 @@
       "enabled": true,
       "serviceAccountClientId": "snl-api-admin",
       "clientRoles": {
-        "realm-management": ["manage-users", "view-users"]
+        "realm-management": [
+          "manage-users",
+          "view-users"
+        ]
       }
     }
   ]
